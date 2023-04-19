@@ -47,7 +47,7 @@ EZWallet (read EaSy Wallet) is a software application designed to help individua
 # Context Diagram and interfaces
 
 ## Context Diagram
-\<Define here Context diagram using UML use case diagram>
+![ContextDiagram](images/Context_Diagram.jpg)
 
 \<actors are a subset of stakeholders>
 

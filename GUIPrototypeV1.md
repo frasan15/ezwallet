@@ -1,10 +1,30 @@
 # Graphical User Interface Prototype  - CURRENT
 
-Authors:
+Authors: Francesco Santoro, Rafael Lapetina Ribeiro Gomes, Eric Yugo Hioki, Neda Saadat
 
-Date:
+Date: 21/04/2023
 
-Version:
+Version: 1.0
 
-\<Report here the GUI that you propose for EZWallet in CURRENT form, as received by teachers. You are free to organize it as you prefer. A suggested presentation matches the Use cases and scenarios defined in the Requirement document. The GUI can be shown as a sequence of graphical files (jpg, png)  >
+### Account creation page
+![CreateAccount](images/CreateAccount.jpeg)
+
+### Login page
+![LoginPage](images/LoginPage.jpeg)
+
+### All Transactions page
+![AllTransactions](images/AllTransactions.jpeg)
+
+### Add new transactions page
+![AddExpense](images/AddExpense.jpeg)
+
+### Delete transactions page
+![DeleteTransaction](images/DeleteTransaction.jpeg)
+
+### All categories pages
+![AllCategories](images/AllCategories.jpeg)
+
+### Add new category page
+![AddCategory](images/AddCategory.jpeg)
+
 

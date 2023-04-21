@@ -125,55 +125,117 @@ A young adult is going to travel and wants to keep track of his expenses during 
 
 
 ## Use case diagram
-\<define here UML Use case diagram UCD summarizing all use cases, and their relationships>
+
+![UseCases](images/UseCases.png)
 
 
-\<next describe here each use case in the UCD>
-### Use case 1, UC1
+### Login use case, UC1
 | Actors Involved        |  |
 | ------------- |:-------------:| 
-|  Precondition     | \<Boolean expression, must evaluate to true before the UC can start> |
-|  Post condition     | \<Boolean expression, must evaluate to true after UC is finished> |
+|  Precondition     | Client already has an account on EZWallet |
+|  Post condition     |  User is authenticated and authorized |
 |  Nominal Scenario     | \<Textual description of actions executed by the UC> |
 |  Variants     | \<other normal executions> |
-|  Exceptions     | \<exceptions, errors > |
+|  Exceptions     | Password is wrong, User not found |
 
 ##### Scenario 1.1 
 
-\<describe here scenarios instances of UC1>
-
-\<a scenario is a sequence of steps that corresponds to a particular execution of one use case>
-
-\<a scenario is a more formal description of a story>
-
-\<only relevant scenarios should be described>
-
 | Scenario 1.1 | |
 | ------------- |:-------------:| 
-|  Precondition     | \<Boolean expression, must evaluate to true before the scenario can start> |
-|  Post condition     | \<Boolean expression, must evaluate to true after scenario is finished> |
+|  Precondition     | User is unauthenticated |
+|  Post condition     | User is authenticated and authorized |
 | Step#        | Description  |
-|  1     |  |  
-|  2     |  |
-|  ...     |  |
+|  1     | User opens website |  
+|  2     | Session is expired, sent to Login page | 
+|  3     | User inserts email and password |  
+|  4     | User presses the Login button |
+|  5     | User can proceed to visualization of his/her transactions and categories |
 
 ##### Scenario 1.2
 
-##### Scenario 1.x
+| Scenario 1.2 | |
+| ------------- |:-------------:| 
+|  Precondition     | User is unauthenticated |
+|  Post condition     | User is unauthenticated |
+| Step#        | Description  |
+|  1     | User opens website |  
+|  2     | Session is expired, sent to Login page |  
+|  3     | User inserts email and password |  
+|  4     | User presses the Login button |
+|  5     | User gets an error message |
+|  6     | User remains in the login page |
 
-### Use case 2, UC2
-..
+### Register Account use case, UC2
 
-### Use case x, UCx
-..
+| Actors Involved        |  |
+| ------------- |:-------------:| 
+|  Precondition     | Client does not have an account on EZWallet |
+|  Post condition     |  User creates account and is authenticated and authorized |
+|  Nominal Scenario     | \<Textual description of actions executed by the UC> |
+|  Variants     | \<other normal executions> |
+|  Exceptions     | Password is wrong, User not found |
+
+##### Scenario 1.1 
+
+| Scenario 1.1 | |
+| ------------- |:-------------:| 
+|  Precondition     | User does not have account |
+|  Post condition     | User is authenticated and authorized |
+| Step#        | Description  |
+|  1     | User opens website and taken to Login page |
+|  2     | User clicks on Create new account button |  
+|  3     | User inserts email, username and password |  
+|  4     | User presses the Sign up button |
+|  5     | System creates new user |
+|  6     | User can proceed to visualization of his/her transactions and categories |
+
+##### Scenario 1.2
+
+| Scenario 1.2 | |
+| ------------- |:-------------:| 
+|  Precondition     | User is unauthenticated |
+|  Post condition     | User is unauthenticated |
+| Step#        | Description  |
+|  1     | User opens website and taken to Login page |
+|  2     | User clicks on Create new account button |  
+|  3     | User inserts email, username and password |  
+|  4     | User presses the Sin up button |
+|  5     | User gets an error message |
+|  6     | User remains in the Login page |
+
+### Add new transaction use case, UC2
+
+| Actors Involved        |  |
+| ------------- |:-------------:| 
+|  Precondition     | User is in the transactions page |
+|  Post condition     |  New transaction is added to the user's list |
+|  Nominal Scenario     | \<Textual description of actions executed by the UC> |
+|  Variants     | \<other normal executions> |
+|  Exceptions     | User leaves any input form blank, or type invalid date, error talking with the server  |
+
+##### Scenario 1.1 
+
+| Scenario 1.1 | |
+| ------------- |:-------------:| 
+|  Precondition     | User is in the transactions page |
+|  Post condition     | Transaction added to list |
+| Step#        | Description  |
+|  1     | User is in the categories page |
+|  2     | User clicks on a certain category |  
+|  3     | Page of the selected category is loaded with transactions |  
+|  4     | User presses the Add Expense button |
+|  5     | Enters another page for filling the expense information | 
+|  5     | User fills out form to add new transaction (name, price, date) |
+|  6     | User clicks button Add |
+|  7     | User is taken back to all transactions view, with the new expense added |
+
+
 
 
 
 # Glossary
 
-\<use UML class diagram to define important terms, or concepts in the domain of the application, and their relationships> 
-
-\<concepts must be used consistently all over the document, ex in use cases, requirements etc>
+![Glossary](images/Glossary.png)
 
 # System Design
 \<describe here system design>

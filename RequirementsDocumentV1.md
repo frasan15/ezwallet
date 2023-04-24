@@ -6,8 +6,14 @@ Version: V1 - description of EZWallet in CURRENT form (as received by teachers)
 
  
 | Version number | Change |
-| ----------------- |:-----------|
-| | | 
+| ----------------- |:-----------:|
+| 1.0 | Add Stakeholder, Stories and Personas, Functional and Non Function requirements |
+| 1.1 | Add context diagram and images |
+| 1.2 | Add use cases and glossary |
+| 1.3 | Add GUI Prototype |
+| 1.4 |  |
+| 1.5 |  |
+| 1.6 |  |
 
 
 # Contents
@@ -134,9 +140,9 @@ A young adult is going to travel and wants to keep track of his expenses during 
 | ------------- |:-------------:| 
 |  Precondition     | Client already has an account on EZWallet |
 |  Post condition     |  User is authenticated and authorized |
-|  Nominal Scenario     | \<Textual description of actions executed by the UC> |
-|  Variants     | \<other normal executions> |
-|  Exceptions     | Password is wrong, User not found |
+|  Nominal Scenario     | Scenario 1.1 |
+|  Variants     | Username, password, and email have to be correct |
+|  Exceptions     | Scenarios 1.2 and 1.3 |
 
 ##### Scenario 1.1 
 
@@ -162,22 +168,37 @@ A young adult is going to travel and wants to keep track of his expenses during 
 |  2     | Session is expired, sent to Login page |  
 |  3     | User inserts email and password |  
 |  4     | User presses the Login button |
-|  5     | User gets an error message |
+|  5     | Password is wrong, user gets an error message |
 |  6     | User remains in the login page |
+
+##### Scenario 1.3
+
+| Scenario 1.3 | |
+| ------------- |:-------------:| 
+|  Precondition     | User is unauthenticated |
+|  Post condition     | User is unauthenticated |
+| Step#        | Description  |
+|  1     | User opens website |  
+|  2     | Session is expired, sent to Login page |  
+|  3     | User inserts email and password |  
+|  4     | User presses the Login button |
+|  5     | User not found in database, user gets an error message |
+|  6     | User remains in the login page |
+
 
 ### Register Account use case, UC2
 
 | Actors Involved        |  |
 | ------------- |:-------------:| 
 |  Precondition     | Client does not have an account on EZWallet |
-|  Post condition     |  User creates account and is authenticated and authorized |
-|  Nominal Scenario     | \<Textual description of actions executed by the UC> |
-|  Variants     | \<other normal executions> |
-|  Exceptions     | Password is wrong, User not found |
+|  Post condition     |  User is authenticated and authorized |
+|  Nominal Scenario     | Scenario 2.1 |
+|  Variants     | - |
+|  Exceptions     | Scenario 2.2 |
 
-##### Scenario 1.1 
+##### Scenario 2.1 
 
-| Scenario 1.1 | |
+| Scenario 2.1 | |
 | ------------- |:-------------:| 
 |  Precondition     | User does not have account |
 |  Post condition     | User is authenticated and authorized |
@@ -189,9 +210,9 @@ A young adult is going to travel and wants to keep track of his expenses during 
 |  5     | System creates new user |
 |  6     | User can proceed to visualization of his/her transactions and categories |
 
-##### Scenario 1.2
+##### Scenario 2.2
 
-| Scenario 1.2 | |
+| Scenario 2.2 | |
 | ------------- |:-------------:| 
 |  Precondition     | User is unauthenticated |
 |  Post condition     | User is unauthenticated |
@@ -199,26 +220,85 @@ A young adult is going to travel and wants to keep track of his expenses during 
 |  1     | User opens website and taken to Login page |
 |  2     | User clicks on Create new account button |  
 |  3     | User inserts email, username and password |  
-|  4     | User presses the Sin up button |
-|  5     | User gets an error message |
+|  4     | User presses the Sign up button |
+|  5     | Email already in use, user gets an error message |
 |  6     | User remains in the Login page |
 
-### Add new transaction use case, UC2
+### Logout use case, UC3
 
 | Actors Involved        |  |
 | ------------- |:-------------:| 
-|  Precondition     | User is in the transactions page |
-|  Post condition     |  New transaction is added to the user's list |
-|  Nominal Scenario     | \<Textual description of actions executed by the UC> |
-|  Variants     | \<other normal executions> |
-|  Exceptions     | User leaves any input form blank, or type invalid date, error talking with the server  |
+|  Precondition     | User is authenticated and authorized |
+|  Post condition     |  User is unauthenticated |
+|  Nominal Scenario     | Scenario 3.1 |
+|  Variants     | - |
+|  Exceptions     | Scenario 3.2 |
 
-##### Scenario 1.1 
+##### Scenario 3.1 
 
-| Scenario 1.1 | |
+| Scenario 3.1 | |
 | ------------- |:-------------:| 
-|  Precondition     | User is in the transactions page |
-|  Post condition     | Transaction added to list |
+|  Precondition     | User is authenticated |
+|  Post condition     | User is unauthenticated in the login page |
+| Step#        | Description  |
+|  1     | User is in any page while authenticated |  
+|  2     | User clicks profile icon in the top right corner |  
+|  3     | User clicks Log out button |
+|  4     | System resets user's session tokens |
+|  5     | User taken to login page |
+
+### Create new Category use case, UC4
+
+| Actors Involved        |  |
+| ------------- |:-------------:| 
+|  Precondition     | User is authenticated and authorized |
+|  Post condition     | New category is in database |
+|  Nominal Scenario     | Scenario 4.1 |
+|  Variants     | Type and color inputs |
+|  Exceptions     | Scenario 4.2 |
+
+#### Scenario 4.1
+| Scenario 4.1 | |
+| ------------- |:-------------:| 
+|  Precondition  | User is authenticated |
+|  Post condition | New category added to database |
+| Step#        | Description  |
+|  1     | User is at categories page |
+|  2     | User clicks Add new category button |
+|  3     | Two text inputs appear at the bottom |
+|  4     | User fills the form with a type and color |
+|  5     | User clicks button add |
+|  6     | New category added to database |
+
+#### Scenario 4.2
+| Scenario 4.2 | |
+| ------------- |:-------------:| 
+|  Precondition  | User is authenticated |
+|  Post condition | New category added to database and user's list |
+| Step#        | Description  |
+|  1     | User is at categories page |
+|  2     | User clicks Add new category button |
+|  3     | Two text inputs appear at the bottom |
+|  4     | User does leaves form blank |
+|  5     | User clicks button add |
+|  6     | User gets an error message |
+
+### Add new transaction use case, UC5
+
+| Actors Involved        |  |
+| ------------- |:-------------:| 
+|  Precondition     | User is authenticated in the transactions page |
+|  Post condition     |  New transaction is added to database |
+|  Nominal Scenario     | Scenario 5.1 |
+|  Variants     | Name, price and date inputs |
+|  Exceptions     | User is unauthenticated, Scenario 5.2 |
+
+##### Scenario 5.1 
+
+| Scenario 5.1 | |
+| ------------- |:-------------:| 
+|  Precondition     | User is authenticaged in the transactions page |
+|  Post condition     | Transaction added to database and user list |
 | Step#        | Description  |
 |  1     | User is in the categories page |
 |  2     | User clicks on a certain category |  
@@ -229,8 +309,43 @@ A young adult is going to travel and wants to keep track of his expenses during 
 |  6     | User clicks button Add |
 |  7     | User is taken back to all transactions view, with the new expense added |
 
+#### Scenario 5.2
+
+| Scenario 5.2 | |
+| ------------- |:-------------:| 
+|  Precondition | User is authenticated in the transactions page |
+|  Post condition | Transaction not added to database |
+| Step#        | Description  |
+|  1     | User is in the categories page |
+|  2     | User clicks on a certain category |  
+|  3     | Page of the selected category is loaded with transactions |  
+|  4     | User presses the Add Expense button |
+|  5     | Enters another page for filling the expense information | 
+|  5     | User does not fill out form to add new transaction or adds invalid date |
+|  6     | User clicks button Add |
+|  7     | User is gets an error message |
 
 
+### Delete Transaction use case, UC6
+
+| Actors Involved        |  |
+| ------------- |:-------------:| 
+|  Precondition     | User is authenticated and authorized |
+|  Post condition     | Transaction is in not database anymore |
+|  Nominal Scenario     | Scenario 6.1 |
+|  Variants     | - |
+|  Exceptions     | User not authenticated |
+
+#### Scenario 6.1
+| Scenario 6.1 | |
+| ------------- |:-------------:| 
+|  Precondition  | User is authenticated |
+|  Post condition | Transaction deleted from database |
+| Step#        | Description  |
+|  1     | User is at transactions page |
+|  2     | User selects a row from transactions table |
+|  3     | User clicks button delete |
+|  4     | Request sent to server and transaction is deleted from database and user's list in front end |
 
 
 # Glossary

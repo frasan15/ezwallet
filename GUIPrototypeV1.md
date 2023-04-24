@@ -2,15 +2,24 @@
 
 Authors: Francesco Santoro, Rafael Lapetina Ribeiro Gomes, Eric Yugo Hioki, Neda Saadat
 
-Date: 21/04/2023
+Date: 24/04/2023
 
-Version: 1.0
+Version: 1.1
 
 ### Account creation page
 ![CreateAccount](images/CreateAccount.jpeg)
 
+### User already registered error
+![AlreadyRegisterd](images/User already registered.png)
+
 ### Login page
-![LoginPage](images/LoginPage.jpeg)
+![LoginPage](images/Login interface.png)
+
+### User not found error
+![NotFound](images/User not found.png)
+
+### Wrong credentials error
+![LoginPage](images/Wrong Credentials.png)
 
 ### All Transactions page
 ![AllTransactions](images/AllTransactions.jpeg)
@@ -22,9 +31,12 @@ Version: 1.0
 ![DeleteTransaction](images/DeleteTransaction.jpeg)
 
 ### All categories pages
-![AllCategories](images/AllCategories.jpeg)
+![AllCategories](images/Log out.png)
 
 ### Add new category page
 ![AddCategory](images/AddCategory.jpeg)
+
+
+
 
 

@@ -48,12 +48,13 @@ EZWallet (read EaSy Wallet) is a software application designed to help individua
 | ----------------- |:-----------:|
 |   Users     |      People using the app in order to keep track of their expenses could be anyone who wants to manage the expenses of a person or a family)     | 
 | Administrator | DB administrator (manages DBMSs on which the app is based) and IT administrator (admin, manages the application) |
-| Google play and Apple store | Services to distribute the application | 
+| Web server | Services to make the application available | 
+| Google Ads Provider | Responsible to provide ads for application |
 
 # Context Diagram and interfaces
 
 ## Context Diagram
-![ContextDiagram](images/Context_Diagram.jpg)
+![ContextDiagram](images/V1/Context_Diagram.jpg)
 
 \<actors are a subset of stakeholders>
 
@@ -64,7 +65,9 @@ EZWallet (read EaSy Wallet) is a software application designed to help individua
 
 | Actor | Logical Interface | Physical Interface  |
 | ------------- |:-------------:| -----:|
-|   Actor x..     |  |  |
+|   User     | GUI | WEB |
+|   Admin   | GUI | PC |
+|   Google Ads Provider   | https://ads.google.com/home/ | Internet link |
 
 # Stories and personas
 
@@ -132,7 +135,7 @@ A young adult is going to travel and wants to keep track of his expenses during 
 
 ## Use case diagram
 
-![UseCases](images/UseCases.png)
+![UseCases](images/V1/UseCases.png)
 
 
 ### Login use case, UC1
@@ -350,12 +353,12 @@ A young adult is going to travel and wants to keep track of his expenses during 
 
 # Glossary
 
-![Glossary](images/Glossary.png)
+![Glossary](images/V1/Glossary.png)
 
 # System Design
-\<describe here system design>
 
-\<must be consistent with Context diagram>
+![Glossary](images/V1/System_DesignV1.jpg)
+
 
 # Deployment Diagram 
 

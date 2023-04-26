@@ -7,34 +7,34 @@ Date: 24/04/2023
 Version: 1.1
 
 ### Account creation page
-![CreateAccount](images/CreateAccount.jpeg)
+![CreateAccount](images/V1/CreateAccount.jpeg)
 
 ### User already registered error
-![AlreadyRegisterd](images/User already registered.png)
+![AlreadyRegisterd](images/V1/User already registered.png)
 
 ### Login page
-![LoginPage](images/Login interface.png)
+![LoginPage](images/V1/Login interface.png)
 
 ### User not found error
-![NotFound](images/User not found.png)
+![NotFound](images/V1/User not found.png)
 
 ### Wrong credentials error
-![LoginPage](images/Wrong Credentials.png)
+![LoginPage](images/V1/Wrong Credentials.png)
 
 ### All Transactions page
-![AllTransactions](images/AllTransactions.jpeg)
+![AllTransactions](images/V1/AllTransactions.jpeg)
 
 ### Add new transactions page
-![AddExpense](images/AddExpense.jpeg)
+![AddExpense](images/V1/AddExpense.jpeg)
 
 ### Delete transactions page
-![DeleteTransaction](images/DeleteTransaction.jpeg)
+![DeleteTransaction](images/V1/DeleteTransaction.jpeg)
 
 ### All categories pages
-![AllCategories](images/Log out.png)
+![AllCategories](images/V1/Log out.png)
 
 ### Add new category page
-![AddCategory](images/AddCategory.jpeg)
+![AddCategory](images/V1/AddCategory.jpeg)
 
 
 

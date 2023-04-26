@@ -158,7 +158,7 @@ A young adult is going to travel and wants to keep track of his expenses during 
 |  2     | Session is expired, sent to Login page | 
 |  3     | User inserts email and password |  
 |  4     | User presses the Login button |
-|  5     | User can proceed to visualization of his/her transactions and categories |
+|  5     | User can proceed to choose individual to be used |
 
 ##### Scenario 1.2
 
@@ -211,7 +211,7 @@ A young adult is going to travel and wants to keep track of his expenses during 
 |  3     | User inserts email, username and password |  
 |  4     | User presses the Sign up button |
 |  5     | System creates new user |
-|  6     | User can proceed to visualization of his/her transactions and categories |
+|  6     | User can proceed to choose individual to be used |
 
 ##### Scenario 2.2
 

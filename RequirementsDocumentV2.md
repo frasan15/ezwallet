@@ -7,7 +7,7 @@ Version: V2 - description of EZWallet in FUTURE form (as proposed by the team)
 | Version number | Change |
 | ----------------- |:-----------:|
 | 1.0 | Add V1 |
-
+| 1.1 | Add extra use cases and diagrams |
 
 # Contents
 
@@ -155,7 +155,7 @@ A young adult is going to travel and wants to keep track of his expenses during 
 |  Post condition     | User is authenticated and authorized |
 | Step#        | Description  |
 |  1     | User opens website |  
-|  2     | Session is expired, sent to Login page | 
+|  2     | Session is expired, sent to Login screen | 
 |  3     | User inserts email and password |  
 |  4     | User presses the Login button |
 |  5     | User can proceed to visualization of his/her transactions and categories |
@@ -168,11 +168,11 @@ A young adult is going to travel and wants to keep track of his expenses during 
 |  Post condition     | User is unauthenticated |
 | Step#        | Description  |
 |  1     | User opens website |  
-|  2     | Session is expired, sent to Login page |  
+|  2     | Session is expired, sent to Login screen |  
 |  3     | User inserts email and password |  
 |  4     | User presses the Login button |
 |  5     | Password is wrong, user gets an error message |
-|  6     | User remains in the login page |
+|  6     | User remains in the login screen |
 
 ##### Scenario 1.3
 
@@ -182,11 +182,11 @@ A young adult is going to travel and wants to keep track of his expenses during 
 |  Post condition     | User is unauthenticated |
 | Step#        | Description  |
 |  1     | User opens website |  
-|  2     | Session is expired, sent to Login page |  
+|  2     | Session is expired, sent to Login screen |  
 |  3     | User inserts email and password |  
 |  4     | User presses the Login button |
 |  5     | User not found in database, user gets an error message |
-|  6     | User remains in the login page |
+|  6     | User remains in the login screen |
 
 
 ### Register Account use case, UC2
@@ -206,7 +206,7 @@ A young adult is going to travel and wants to keep track of his expenses during 
 |  Precondition     | User does not have account |
 |  Post condition     | User is authenticated and authorized |
 | Step#        | Description  |
-|  1     | User opens website and taken to Login page |
+|  1     | User opens website and taken to Login screen |
 |  2     | User clicks on Create new account button |  
 |  3     | User inserts email, username and password |  
 |  4     | User presses the Sign up button |
@@ -220,12 +220,12 @@ A young adult is going to travel and wants to keep track of his expenses during 
 |  Precondition     | User is unauthenticated |
 |  Post condition     | User is unauthenticated |
 | Step#        | Description  |
-|  1     | User opens website and taken to Login page |
+|  1     | User opens website and taken to Login screen |
 |  2     | User clicks on Create new account button |  
 |  3     | User inserts email, username and password |  
 |  4     | User presses the Sign up button |
 |  5     | Email already in use, user gets an error message |
-|  6     | User remains in the Login page |
+|  6     | User remains in the Login screen |
 
 ### Logout use case, UC3
 
@@ -242,13 +242,13 @@ A young adult is going to travel and wants to keep track of his expenses during 
 | Scenario 3.1 | |
 | ------------- |:-------------:| 
 |  Precondition     | User is authenticated |
-|  Post condition     | User is unauthenticated in the login page |
+|  Post condition     | User is unauthenticated in the login screen |
 | Step#        | Description  |
-|  1     | User is in any page while authenticated |  
+|  1     | User is in any screen while authenticated |  
 |  2     | User clicks profile icon in the top right corner |  
 |  3     | User clicks Log out button |
 |  4     | System resets user's session tokens |
-|  5     | User taken to login page |
+|  5     | User taken to login screen |
 
 ### Create new Category use case, UC4
 
@@ -266,7 +266,7 @@ A young adult is going to travel and wants to keep track of his expenses during 
 |  Precondition  | User is authenticated |
 |  Post condition | New category added to database |
 | Step#        | Description  |
-|  1     | User is at categories page |
+|  1     | User is at categories screen |
 |  2     | User clicks Add new category button |
 |  3     | Two text inputs appear at the bottom |
 |  4     | User fills the form with a type and color |
@@ -279,7 +279,7 @@ A young adult is going to travel and wants to keep track of his expenses during 
 |  Precondition  | User is authenticated |
 |  Post condition | New category added to database and user's list |
 | Step#        | Description  |
-|  1     | User is at categories page |
+|  1     | User is at categories screen |
 |  2     | User clicks Add new category button |
 |  3     | Two text inputs appear at the bottom |
 |  4     | User does leaves form blank |
@@ -290,7 +290,7 @@ A young adult is going to travel and wants to keep track of his expenses during 
 
 | Actors Involved        |  |
 | ------------- |:-------------:| 
-|  Precondition     | User is authenticated in the transactions page |
+|  Precondition     | User is authenticated in the transactions screen |
 |  Post condition     |  New transaction is added to database |
 |  Nominal Scenario     | Scenario 5.1 |
 |  Variants     | Name, price and date inputs |
@@ -300,14 +300,14 @@ A young adult is going to travel and wants to keep track of his expenses during 
 
 | Scenario 5.1 | |
 | ------------- |:-------------:| 
-|  Precondition     | User is authenticaged in the transactions page |
+|  Precondition     | User is authenticaged in the transactions screen |
 |  Post condition     | Transaction added to database and user list |
 | Step#        | Description  |
-|  1     | User is in the categories page |
+|  1     | User is in the categories screen |
 |  2     | User clicks on a certain category |  
-|  3     | Page of the selected category is loaded with transactions |  
+|  3     | screen of the selected category is loaded with transactions |  
 |  4     | User presses the Add Expense button |
-|  5     | Enters another page for filling the expense information | 
+|  5     | Enters another screen for filling the expense information | 
 |  5     | User fills out form to add new transaction (name, price, date) |
 |  6     | User clicks button Add |
 |  7     | User is taken back to all transactions view, with the new expense added |
@@ -316,14 +316,14 @@ A young adult is going to travel and wants to keep track of his expenses during 
 
 | Scenario 5.2 | |
 | ------------- |:-------------:| 
-|  Precondition | User is authenticated in the transactions page |
+|  Precondition | User is authenticated in the transactions screen |
 |  Post condition | Transaction not added to database |
 | Step#        | Description  |
-|  1     | User is in the categories page |
+|  1     | User is in the categories screen |
 |  2     | User clicks on a certain category |  
-|  3     | Page of the selected category is loaded with transactions |  
+|  3     | screen of the selected category is loaded with transactions |  
 |  4     | User presses the Add Expense button |
-|  5     | Enters another page for filling the expense information | 
+|  5     | Enters another screen for filling the expense information | 
 |  5     | User does not fill out form to add new transaction or adds invalid date |
 |  6     | User clicks button Add |
 |  7     | User is gets an error message |
@@ -345,10 +345,76 @@ A young adult is going to travel and wants to keep track of his expenses during 
 |  Precondition  | User is authenticated |
 |  Post condition | Transaction deleted from database |
 | Step#        | Description  |
-|  1     | User is at transactions page |
+|  1     | User is at transactions screen |
 |  2     | User selects a row from transactions table |
 |  3     | User clicks button delete |
 |  4     | Request sent to server and transaction is deleted from database and user's list in front end |
+
+### Forgot password use case, UC7
+
+| Actors Involved        |  |
+| ------------- |:-------------:| 
+|  Precondition     | User is unauthenticated |
+|  Post condition     | User is authenticated |
+|  Nominal Scenario     | Scenario 7.1 |
+|  Variants     | - |
+|  Exceptions     | User authenticated |
+
+#### Scenario 7.1
+| Scenario 7.1 | |
+| ------------- |:-------------:| 
+|  Precondition  | User is unauthenticated |
+|  Post condition | User is authenticated |
+| Step#        | Description  |
+|  1     | User is at login screen |
+|  2     | User clicks on "Retrieve it" button for forgotten password |
+|  3     | User inserts email in input form |
+|  4     | User presses "Send" button |
+|  5     | User receives email containing link to reset password |
+|  6     | User clicks link and is redirected to login page to reset password |
+|  7     | User inserts new password and logs in |
+
+### Statistics about expenses use case, UC8
+
+| Actors Involved        |  |
+| ------------- |:-------------:| 
+|  Precondition     | User is authenticated |
+|  Post condition     | Expenses graphs are on screen |
+|  Nominal Scenario     | Scenario 8.1 |
+|  Variants     | - |
+|  Exceptions     | User unauthenticated |
+
+#### Scenario 8.1
+| Scenario 8.1 | |
+| ------------- |:-------------:| 
+|  Precondition  | User is authenticated |
+|  Post condition | Expenses graphs are on screen |
+| Step#        | Description  |
+|  1     | User is at categories screen |
+|  2     | User clicks button "See statistics" |
+|  3     | User is taken to another page |
+|  4     | Pie chart and bar chart are loaded containing information about all expenses |
+
+
+### Search transactions use case, UC9
+
+| Actors Involved        |  |
+| ------------- |:-------------:| 
+|  Precondition     | User is authenticated |
+|  Post condition     | User is authenticated |
+|  Nominal Scenario     | Scenario 9.1 |
+|  Variants     | - |
+|  Exceptions     | User unauthenticated |
+
+#### Scenario 9.1
+| Scenario 9.1 | |
+| ------------- |:-------------:| 
+|  Precondition  | User is authenticated |
+|  Post condition | Expenses graphs are on screen |
+| Step#        | Description  |
+|  1     | User is at transactions screen |
+|  2     | User clicks search bar "Search transaction by name" |
+|  3     | Only entries that match the entered text are shown in the table |
 
 
 # Glossary

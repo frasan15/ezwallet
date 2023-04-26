@@ -31,11 +31,31 @@ Version: 1.1
 ![DeleteTransaction](images/V1/DeleteTransaction.jpeg)
 
 ### All categories pages
-![AllCategories](images/V1/Log out.png)
+![AllCategories](images/V1/AllCategories.jpeg)
 
 ### Add new category page
 ![AddCategory](images/V1/AddCategory.jpeg)
 
+### Already Logged out page
+![AlreadyLoggedOut](images/V1/Already logged out.png)
+
+### Log out page
+![LogOut](images/V1/Log out.png)
+
+### User not authorized
+![Unauthorized](images/V1/Unathorized.png)
+
+### User access page
+![UserAccess](images/V1/User access.png)
+
+### User added succesfully
+![UserAddedSuccesfully](images/V1/User added succesfully.png)
+
+### User already logged in
+![UserAlreadyLoggedIn](images/V1/User already logged in.png)
+
+### User not registered
+![UserNotRegistered](images/V1/User not registered.png)
 
 
 

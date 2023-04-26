@@ -362,7 +362,7 @@ A young adult is going to travel and wants to keep track of his expenses during 
 
 # Deployment Diagram 
 
-\<describe here deployment diagram >
+![Glossary](images/V1/deployment_diagram.jpg)
 
 
 

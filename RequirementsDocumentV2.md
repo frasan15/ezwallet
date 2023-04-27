@@ -487,7 +487,7 @@ A young adult is going to travel and wants to keep track of his expenses during 
 # System Design
 ![System Designe](images/V2/System_Designe_V2.jpg)
 
-\<must be consistent with Context diagram>
+
 
 # Deployment Diagram 
 

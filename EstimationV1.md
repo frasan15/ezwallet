@@ -43,7 +43,6 @@ Consider the EZWallet  project in CURRENT version (as received by the teachers),
 | Develop management documents  |8|
 | Deploy code| 5|
 ###
-Insert here Gantt chart with above activities
 
 |         Activity name    | Estimated effort (person hours)   |    Start   | Finish    |
 | ----------- | ------------------------------- | ----------- | ----------- |

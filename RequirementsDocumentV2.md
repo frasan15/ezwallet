@@ -48,7 +48,7 @@ EZWallet (read EaSy Wallet) is a software application designed to help individua
 
 ## Context Diagram
 
-\<actors are a subset of stakeholders>
+![Context Diagram](images/V2/Context_Diagram.jpg)
 
 ## Interfaces
 \<describe here each interface in the context diagram>
@@ -416,13 +416,76 @@ A young adult is going to travel and wants to keep track of his expenses during 
 |  2     | User clicks search bar "Search transaction by name" |
 |  3     | Only entries that match the entered text are shown in the table |
 
+### delete Account use case, UC10
+| Actors Involved        |  |
+| ------------- |:-------------:| 
+|  Precondition     | user want to delet account |
+|  Post condition     | user's account delete  |
+|  Nominal Scenario     | Scenario 10.1 |
+|  Variants     |  |
+|  Exceptions     |  | 
+
+| Scenario 10.1 | |
+| ------------- |:-------------:| 
+|  Precondition     | user want to delet account |
+|  Post condition     | user's account delete |
+| Step#        |   |
+|  1     | User click on the profile icon in the top right corner |  
+|  2     | User will see a list contained "Log out" and "Delete Account" |
+|  3     | User click on delete account from list |
+|  4     | System sent notification to user: “ You are deleting your account, you will lose all your data, Are you sure ? “  |
+|  5     | System show 2 bottom: “Yes” “No” |
+|  6     | User click on “Yes” bottom |
+|  7     | System show message to user: “Your account successfully deleted”  |
+
+### Sum of all transaction by category use case, UC11
+| Actors Involved        |  |
+| ------------- |:-------------:| 
+|  Precondition     | user want to see the sum of all transaction in a category|
+|  Post condition     | sum of all transaction will show |
+|  Nominal Scenario     | Scenario 11.1 |
+|  Variants     |  |
+|  Exceptions     |  | 
+
+| Scenario 11.1 | |
+| ------------- |:-------------:| 
+|  Precondition     | user is logged and authorized |
+|  Post condition     | User is not logged |
+| Step#        |   |
+|  1     | User is on Category page |   
+|  2     | User choose one category   |
+|  3     | User click on the bottom “Sum all”   |
+|  4     | System calculates the sum   |
+|  5     | System show sum in a box   |
+
+### Delete category use case, UC12
+| Actors Involved        |  |
+| ------------- |:-------------:| 
+|  Precondition     | user want to delet a category |
+|  Post condition     | category delete completely   |
+|  Nominal Scenario     | Scenario 12.1 |
+|  Variants     |  |
+|  Exceptions     |  | 
+
+| Scenario 12.1 | |
+| ------------- |:-------------:| 
+|  Precondition     | user want to delet a category |
+|  Post condition     | category delete completely |
+| Step#        |   |
+|  1     | User is on Category page |   
+|  2     | User choose one category   |
+|  3     | User click on the bottom “delet this category”   |
+|  4     | System alert user" Are you sure you want to delete this category ? ? all your transaction will be lost.    |
+|  5     | user click on "yes" buttom   |
+|  6     | System show message "category deleted sucsessfully"   |
+
 
 # Glossary
 
 ![Glossary](images/V2/Glossary.png)
 
 # System Design
-\<describe here system design>
+![System Designe](images/V2/System_Designe_V2.jpg)
 
 \<must be consistent with Context diagram>
 

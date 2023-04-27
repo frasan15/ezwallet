@@ -419,8 +419,8 @@ A young adult is going to travel and wants to keep track of his expenses during 
 ### delete Account use case, UC10
 | Actors Involved        |  |
 | ------------- |:-------------:| 
-|  Precondition     | user want to delet account |
-|  Post condition     | user's account delete  |
+|  Precondition     | user is authorized and authenticate |
+|  Post condition     | delete account from database   |
 |  Nominal Scenario     | Scenario 10.1 |
 |  Variants     |  |
 |  Exceptions     |  | 
@@ -428,15 +428,15 @@ A young adult is going to travel and wants to keep track of his expenses during 
 | Scenario 10.1 | |
 | ------------- |:-------------:| 
 |  Precondition     | user want to delet account |
-|  Post condition     | user's account delete |
+|  Post condition     | delete account from database  |
 | Step#        |   |
-|  1     | User click on the profile icon in the top right corner |  
+|  1     | User is in authorized in any page, click on the profile icon in the top right corner |  
 |  2     | User will see a list contained "Log out" and "Delete Account" |
-|  3     | User click on delete account from list |
-|  4     | System sent notification to user: “ You are deleting your account, you will lose all your data, Are you sure ? “  |
+|  3     | User click on delete account  |
+|  4     | System sent notification to user: “ Are you want to delete the account ? “  |
 |  5     | System show 2 bottom: “Yes” “No” |
 |  6     | User click on “Yes” bottom |
-|  7     | System show message to user: “Your account successfully deleted”  |
+|  7     | System delete account from database  |
 
 ### Sum of all transaction by category use case, UC11
 | Actors Involved        |  |
@@ -449,14 +449,14 @@ A young adult is going to travel and wants to keep track of his expenses during 
 
 | Scenario 11.1 | |
 | ------------- |:-------------:| 
-|  Precondition     | user is logged and authorized |
-|  Post condition     | User is not logged |
+|  Precondition     | user is authenticated and authorized |
+|  Post condition     | User is not authenticated and unauthorized |
 | Step#        |   |
 |  1     | User is on Category page |   
 |  2     | User choose one category   |
-|  3     | User click on the bottom “Sum all”   |
+|  3     | User click on the bottom “Sum all transactions”   |
 |  4     | System calculates the sum   |
-|  5     | System show sum in a box   |
+|  5     | System show sum in a box the total amount of trasactions   |
 
 ### Delete category use case, UC12
 | Actors Involved        |  |
@@ -472,12 +472,10 @@ A young adult is going to travel and wants to keep track of his expenses during 
 |  Precondition     | user want to delet a category |
 |  Post condition     | category delete completely |
 | Step#        |   |
-|  1     | User is on Category page |   
+|  1     | User is on category page |   
 |  2     | User choose one category   |
 |  3     | User click on the bottom “delet this category”   |
-|  4     | System alert user" Are you sure you want to delete this category ? ? all your transaction will be lost.    |
-|  5     | user click on "yes" buttom   |
-|  6     | System show message "category deleted sucsessfully"   |
+|  4     | category delete successfully  |
 
 
 # Glossary

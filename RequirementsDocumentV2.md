@@ -1,6 +1,6 @@
 # Requirements Document - future EZWallet
 
-Date: 26/04/2023
+Date: 28/04/2023
 
 Version: V2 - description of EZWallet in FUTURE form (as proposed by the team)
  
@@ -8,6 +8,7 @@ Version: V2 - description of EZWallet in FUTURE form (as proposed by the team)
 | ----------------- |:-----------:|
 | 1.0 | Add V1 |
 | 1.1 | Add extra use cases and diagrams |
+| 1.2 | Add remaining diagrams and last details |
 
 # Contents
 
@@ -51,9 +52,6 @@ EZWallet (read EaSy Wallet) is a software application designed to help individua
 ![Context Diagram](images/V2/Context_Diagram.jpg)
 
 ## Interfaces
-\<describe here each interface in the context diagram>
-
-\<GUIs will be described graphically in a separate document>
 
 | Actor | Logical Interface | Physical Interface  |
 | ------------- |:-------------:| -----:|
@@ -235,7 +233,7 @@ A young adult is going to travel and wants to keep track of his expenses during 
 |  Post condition     |  User is unauthenticated |
 |  Nominal Scenario     | Scenario 3.1 |
 |  Variants     | - |
-|  Exceptions     | Scenario 3.2 |
+|  Exceptions     | User is already authenticated |
 
 ##### Scenario 3.1 
 
@@ -277,7 +275,7 @@ A young adult is going to travel and wants to keep track of his expenses during 
 | Scenario 4.2 | |
 | ------------- |:-------------:| 
 |  Precondition  | User is authenticated |
-|  Post condition | New category added to database and user's list |
+|  Post condition | Category not added to database |
 | Step#        | Description  |
 |  1     | User is at categories screen |
 |  2     | User clicks Add new category button |
@@ -416,7 +414,7 @@ A young adult is going to travel and wants to keep track of his expenses during 
 |  2     | User clicks search bar "Search transaction by name" |
 |  3     | Only entries that match the entered text are shown in the table |
 
-### delete Account use case, UC10
+### Delete Account use case, UC10
 | Actors Involved        |  |
 | ------------- |:-------------:| 
 |  Precondition     | user is authorized and authenticate |
@@ -427,7 +425,7 @@ A young adult is going to travel and wants to keep track of his expenses during 
 
 | Scenario 10.1 | |
 | ------------- |:-------------:| 
-|  Precondition     | user want to delet account |
+|  Precondition     | user want to delete account |
 |  Post condition     | delete account from database  |
 | Step#        |   |
 |  1     | User is in authorized in any page, click on the profile icon in the top right corner |  
@@ -461,7 +459,7 @@ A young adult is going to travel and wants to keep track of his expenses during 
 ### Delete category use case, UC12
 | Actors Involved        |  |
 | ------------- |:-------------:| 
-|  Precondition     | user want to delet a category |
+|  Precondition     | user want to delete a category |
 |  Post condition     | category delete completely   |
 |  Nominal Scenario     | Scenario 12.1 |
 |  Variants     |  |
@@ -474,9 +472,8 @@ A young adult is going to travel and wants to keep track of his expenses during 
 | Step#        |   |
 |  1     | User is on category page |   
 |  2     | User choose one category   |
-|  3     | User click on the bottom “delet this category”   |
+|  3     | User click on the bottom “delete this category”   |
 |  4     | category delete successfully  |
-
 
 # Glossary
 
@@ -485,9 +482,30 @@ A young adult is going to travel and wants to keep track of his expenses during 
 # System Design
 ![System Designe](images/V2/System_Designe_V2.jpg)
 
-
-
 # Deployment Diagram 
 
 ![Glossary](images/V1/deployment_diagram.png)
+
+
+# Solved Defects
+
+### Defect 1
+
+After user logs in, he or she can choose another account to see their transactions. This is a privacy problem. 
+It was solved by having an account attached to just only one user in the application.
+
+### Defect 2
+
+The getUsers function requires to be called by a user who has Admin privileges, however this function is vital for login, where users are unathenticated and with no privileges.
+It was solved by removing the required Admin privilege to call the function.
+
+### Defect 3
+
+The getLabel function may not have the intended results, because there is not aggregation function after joining with the categories table. In this case, the results will not be summed by category, instead every transaction will have the category and color attached to its object.
+Solved by adding a sum aggregation function to sum all transactions based on a certain category.
+
+### Defect 4
+
+In the controllers/controller.js file, the create_transaction function uses an object with no date attribute to be added to the database, as it is declared in the models/model.js.
+Solved by including the date when inserting the object in the database.
 

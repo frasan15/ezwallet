@@ -1,6 +1,6 @@
 # Requirements Document - current EZWallet
 
-Date: 
+Date: 28/04/2023
 
 Version: V1 - description of EZWallet in CURRENT form (as received by teachers)
 
@@ -11,9 +11,7 @@ Version: V1 - description of EZWallet in CURRENT form (as received by teachers)
 | 1.1 | Add context diagram and images |
 | 1.2 | Add use cases and glossary |
 | 1.3 | Add GUI Prototype |
-| 1.4 |  |
-| 1.5 |  |
-| 1.6 |  |
+| 1.4 | Finish Requirement document |
 
 
 # Contents
@@ -35,6 +33,7 @@ Version: V1 - description of EZWallet in CURRENT form (as received by teachers)
 - [Glossary](#glossary)
 - [System design](#system-design)
 - [Deployment diagram](#deployment-diagram)
+- [Defects](#defects)
 
 # Informal description
 EZWallet (read EaSy Wallet) is a software application designed to help individuals and families keep track of their expenses. Users can enter and categorize their expenses, allowing them to quickly see where their money is going. EZWallet is a powerful tool for those looking to take control of their finances and make informed decisions about their spending.
@@ -364,6 +363,21 @@ A young adult is going to travel and wants to keep track of his expenses during 
 
 ![Glossary](images/V1/deployment_diagram.png)
 
+# Defects
 
+### Defect 1
 
+After user logs in, he or she can choose another account to see their transactions. This is a privacy problem.
+
+### Defect 2
+
+The getUsers function requires to be called by a user who has Admin privileges, however this function is vital for login, where users are unathenticated and with no privileges.
+
+### Defect 3
+
+The getLabel function may not have the intended results, because there is not aggregation function after joining with the categories table. In this case, the results will not be summed by category, instead every transaction will have the category and color attached to its object.
+
+### Defect 4
+
+In the controllers/controller.js file, the create_transaction function uses an object with no date attribute to be added to the database, as it is declared in the models/model.js.
 

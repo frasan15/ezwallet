@@ -38,29 +38,36 @@ describe("getUsers", () => {
     await User.deleteMany({})
   })
 
-  test("should return empty list if there are no users", async () => {
-    const response = await request(app)
+  test("should return empty list if there are no users", (done) => {
+    request(app)
       .get("/api/users")
-
-    expect(response.status).toBe(200)
-    expect(response.body).toHaveLength(0)
+      .then((response) => {
+        expect(response.status).toBe(200)
+        expect(response.body).toHaveLength(0)
+        done()
+      })
+      .catch((err) => done(err))
   })
 
-  test("should retrieve list of all users", async () => {
-    let d = await User.create({
+  test("should retrieve list of all users", (done) => {
+    User.create({
       username: "tester",
-      email: "tester@email.com",
+      email: "test@test.com",
       password: "tester",
+    }).then(() => {
+      request(app)
+        .get("/api/users")
+        .then((response) => {
+          expect(response.status).toBe(200)
+          expect(response.body).toHaveLength(1)
+          expect(response.body[0].username).toEqual("tester")
+          expect(response.body[0].email).toEqual("test@test.com")
+          expect(response.body[0].password).toEqual("tester")
+          expect(response.body[0].role).toEqual("Regular")
+          done() // Notify Jest that the test is complete
+        })
+        .catch((err) => done(err))
     })
-    const response = await request(app)
-      .get("/api/users")
-
-    expect(response.status).toBe(200)
-    expect(response.body).toHaveLength(1)
-    expect(response.body[0].username).toEqual("tester")
-    expect(response.body[0].email).toEqual("tester@email.com")
-    expect(response.body[0].password).toEqual("tester")
-    expect(response.body[0].role).toEqual("Regular")
   })
 })
 

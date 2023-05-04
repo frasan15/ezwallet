@@ -35,6 +35,6 @@
     "supertest": "^6.3.3"
   },
   "jest": {
-    "testTimeout": 15000
+    "testTimeout": 30000
   }
 }

@@ -66,4 +66,4 @@ test:
   script:
     - npm run test:coverage
   rules:
-  - if: '$CI_COMMIT_BRANCH == "main"'
+  - if: '$CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "testdelivery"'

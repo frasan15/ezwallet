@@ -1,7 +1,15 @@
 import bcrypt from 'bcryptjs';
-import User from '../models/User.js';
+import { User } from '../models/User.js';
 import jwt from 'jsonwebtoken';
+import { verifyAuth } from './utils.js';
 
+/**
+ * Register a new user in the system
+  - Request Body Content: An object having attributes `username`, `email` and `password`
+  - Response `data` Content: A message confirming successful insertion
+  - Optional behavior:
+    - error 400 is returned if there is already a user with the same username and/or email
+ */
 export const register = async (req, res) => {
     try {
         const { username, email, password } = req.body;
@@ -15,112 +23,91 @@ export const register = async (req, res) => {
         });
         res.status(200).json('user added succesfully');
     } catch (err) {
-        res.status(500).json(err);
+        res.status(400).json(err);
     }
 };
 
+/**
+ * Register a new user in the system with an Admin role
+  - Request Body Content: An object having attributes `username`, `email` and `password`
+  - Response `data` Content: A message confirming successful insertion
+  - Optional behavior:
+    - error 400 is returned if there is already a user with the same username and/or email
+ */
+export const registerAdmin = async (req, res) => {
+    try {
+        const { username, email, password } = req.body
+        const existingUser = await User.findOne({ email: req.body.email });
+        if (existingUser) return res.status(400).json({ message: "you are already registered" });
+        const hashedPassword = await bcrypt.hash(password, 12);
+        const newUser = await User.create({
+            username,
+            email,
+            password: hashedPassword,
+            role: "Admin"
+        });
+        res.status(200).json('admin added succesfully');
+    } catch (err) {
+        res.status(500).json(err);
+    }
 
-//login
+}
 
+/**
+ * Perform login 
+  - Request Body Content: An object having attributes `email` and `password`
+  - Response `data` Content: An object with the created accessToken and refreshToken
+  - Optional behavior:
+    - error 400 is returned if the user does not exist
+    - error 400 is returned if the supplied password does not match with the one in the database
+    - success 200 is returned if the user is already logged in
+ */
 export const login = async (req, res) => {
     const { email, password } = req.body
     const cookie = req.cookies
     const existingUser = await User.findOne({ email: email })
-    if (cookie.accessToken) return res.status(200).json("you are already logged in")
+    if (verifyAuth(req, res, { authType: "Simple" })) return res.status(200).json("you are already logged in")
     if (!existingUser) return res.status(400).json('please you need to register')
     try {
         const match = await bcrypt.compare(password, existingUser.password)
         if (!match) return res.status(400).json('wrong credentials')
-
         //CREATE ACCESSTOKEN
-
-        // jwt.sign is a method that accepts three arguments (payload, secret, options)
         const accessToken = jwt.sign({
             email: existingUser.email,
-            id: existingUser._id,
+            id: existingUser.id,
             username: existingUser.username,
-        },
-            //ACCESS_KEY
-            process.env.ACCESS_KEY,
-            //options
-            { expiresIn: '1h' }
-        )
-
+            role: existingUser.role
+        }, process.env.ACCESS_KEY, { expiresIn: '1h' })
         //CREATE REFRESH TOKEN
         const refreshToken = jwt.sign({
             email: existingUser.email,
+            id: existingUser.id,
             username: existingUser.username,
-        },
-            //REFRESH_KEY
-            process.env.ACCESS_KEY,
-
-            //options
-            { expiresIn: '7d' }
-
-        )
+            role: existingUser.role
+        }, process.env.ACCESS_KEY, { expiresIn: '7d' })
         //SAVE REFRESH TOKEN TO DB
         existingUser.refreshToken = refreshToken
-        // save the refeshtoken to the database
         const savedUser = await existingUser.save()
-
-        //SEND REFRESH TOKEN TO CLIENT
         res.cookie("accessToken", accessToken, { httpOnly: true, domain: "localhost", path: "/api", maxAge: 60 * 60 * 1000, sameSite: "none", secure: true })
         res.cookie('refreshToken', refreshToken, { httpOnly: true, domain: "localhost", path: '/api', maxAge: 7 * 24 * 60 * 60 * 1000, sameSite: 'none', secure: true })
-        res.status(200).json(accessToken)
-
+        res.status(200).json({ data: { accessToken: accessToken, refreshToken: refreshToken } })
     } catch (error) {
-        res.status(500).json(error)
+        res.status(400).json(error)
     }
 }
 
-export const refreshToken = async (req, res) => {
-    const cookie = req.cookies
-    const refreshToken = cookie.refreshToken
-    if (!refreshToken) {
-        return res.status(401).json({ message: "Unauthorized" }) // unauthorized
-    } else {
-        const user = await User.findOne({ refreshToken: refreshToken })
-        if (!user) {
-            res.status(400).json('user not found')
-        } else {
-            //verify jwt
-            const accessToken = jwt.verify(
-                refreshToken,
-                process.env.ACCESS_KEY,
-                (err, decoded) => {
-                    if (err) return { error: err.message }
-                    if (user.username !== decoded.username || !decoded) return { error: "wrong user" }
-                    // create new accesstoken
-                    const accesstoken = jwt.sign({
-                        username: decoded.username,
-                        email: decoded.email,
-                        id: decoded._id
-                    },
-                        process.env.ACCESS_KEY,
-                        { expiresIn: '1h' }
-                    )
-                    return accesstoken
-                }
-            )
-            if (accessToken.error) {
-                res.status(403).json(accessToken.error)
-            } else {
-                res.cookie('accessToken', accessToken, { httpOnly: true, path: '/api', maxAge: 60 * 60 * 1000, sameSite: 'none', secure: true })
-                res.status(200).json({ accessToken: accessToken })
-            }
-        }
-    }
-}
-
-
-//logout
-
+/**
+ * Perform logout
+  - Auth type: Simple
+  - Request Body Content: None
+  - Response `data` Content: A message confirming successful logout
+  - Optional behavior:
+    - error 400 is returned if the user does not exist
+    - success 200 is returned if the user is already logged out
+ */
 export const logout = async (req, res) => {
-    const cookie = req.cookies
-
-    if (!cookie?.accessToken || cookie.accessToken === "" || !cookie.refreshToken) return res.status(200).json("you are already logged out")
-
-    const refreshToken = cookie.refreshToken
+    if (!verifyAuth(req, res, { authType: "Simple" })) return res.status(200).json("you are already logged out")
+    const refreshToken = req.cookies.refreshToken
 
     const user = await User.findOne({ refreshToken: refreshToken })
     if (!user) return res.status(400).json('user not found')
@@ -131,6 +118,6 @@ export const logout = async (req, res) => {
         const savedUser = await user.save()
         res.status(200).json('logged out')
     } catch (error) {
-        res.status(500).json(error)
+        res.status(400).json(error)
     }
 }

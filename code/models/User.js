@@ -4,7 +4,8 @@ export const UserSchema = new mongoose.Schema({
     username: {
         type: String,
         required: true,
-        max: 255
+        max: 255,
+        unique: true
     },
     email: {
         type: String,
@@ -17,9 +18,36 @@ export const UserSchema = new mongoose.Schema({
     },
     refreshToken: {
         type: String
+    },
+    role: {
+        type: String,
+        default: "Regular"
     }
 }, {
     timestamps: true,
 });
 
-export default mongoose.model('User', UserSchema);   
+export const GroupSchema = new mongoose.Schema({
+    name: {
+        type: String,
+        required: true,
+        default: "group",
+        unique: true
+    },
+    members: [
+        {
+            email: {
+                type: String,
+                required: true
+            },
+            user: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "User"
+            }
+        }
+    ]
+})
+
+const Group = mongoose.model("Group", GroupSchema)
+const User = mongoose.model('User', UserSchema);
+export { Group, User }

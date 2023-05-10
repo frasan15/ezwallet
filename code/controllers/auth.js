@@ -60,13 +60,11 @@ export const registerAdmin = async (req, res) => {
   - Optional behavior:
     - error 400 is returned if the user does not exist
     - error 400 is returned if the supplied password does not match with the one in the database
-    - success 200 is returned if the user is already logged in
  */
 export const login = async (req, res) => {
     const { email, password } = req.body
     const cookie = req.cookies
     const existingUser = await User.findOne({ email: email })
-    if (verifyAuth(req, res, { authType: "Simple" })) return res.status(200).json("you are already logged in")
     if (!existingUser) return res.status(400).json('please you need to register')
     try {
         const match = await bcrypt.compare(password, existingUser.password)
@@ -103,12 +101,10 @@ export const login = async (req, res) => {
   - Response `data` Content: A message confirming successful logout
   - Optional behavior:
     - error 400 is returned if the user does not exist
-    - success 200 is returned if the user is already logged out
  */
 export const logout = async (req, res) => {
-    if (!verifyAuth(req, res, { authType: "Simple" })) return res.status(200).json("you are already logged out")
     const refreshToken = req.cookies.refreshToken
-
+    if (!refreshToken) return res.status(400).json("user not found")
     const user = await User.findOne({ refreshToken: refreshToken })
     if (!user) return res.status(400).json('user not found')
     try {

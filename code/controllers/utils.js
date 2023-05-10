@@ -25,10 +25,10 @@ export const handleDateFilterParams = (req) => {
  *              - the accessToken is expired and the refreshToken has a `username` equal to the requested one => success
  *          - authType === "Admin":
  *              - either the accessToken or the refreshToken have a `role` which is not Admin => error 401
- *              - the accessToken is expired and the refreshToken has a ``role` which is not Admin => error 401
+ *              - the accessToken is expired and the refreshToken has a `role` which is not Admin => error 401
  *              - both the accessToken and the refreshToken have a `role` which is equal to Admin => success
  *              - the accessToken is expired and the refreshToken has a `role` which is equal to Admin => success
- *          - authType === "User":
+ *          - authType === "Group":
  *              - either the accessToken or the refreshToken have a `email` which is not in the requested group => error 401
  *              - the accessToken is expired and the refreshToken has a `email` which is not in the requested group => error 401
  *              - both the accessToken and the refreshToken have a `email` which is in the requested group => success

@@ -39,25 +39,21 @@ export const handleDateFilterParams = (req) => {
 export const verifyAuth = (req, res, info) => {
     const cookie = req.cookies
     if (!cookie.accessToken || !cookie.refreshToken) {
-        res.status(401).json({ message: "Unauthorized" });
-        return false;
+        return { authorized: false, cause: "Unauthorized" };
     }
     try {
         const decodedAccessToken = jwt.verify(cookie.accessToken, process.env.ACCESS_KEY);
         const decodedRefreshToken = jwt.verify(cookie.refreshToken, process.env.ACCESS_KEY);
         if (!decodedAccessToken.username || !decodedAccessToken.email || !decodedAccessToken.role) {
-            res.status(401).json({ message: "Token is missing information" })
-            return false
+            return { authorized: false, cause: "Token is missing information" }
         }
         if (!decodedRefreshToken.username || !decodedRefreshToken.email || !decodedRefreshToken.role) {
-            res.status(401).json({ message: "Token is missing information" })
-            return false
+            return { authorized: false, cause: "Token is missing information" }
         }
         if (decodedAccessToken.username !== decodedRefreshToken.username || decodedAccessToken.email !== decodedRefreshToken.email || decodedAccessToken.role !== decodedRefreshToken.role) {
-            res.status(401).json({ message: "Mismatched users" });
-            return false;
+            return { authorized: false, cause: "Mismatched users" };
         }
-        return true
+        return { authorized: true, cause: "Authorized" }
     } catch (err) {
         if (err.name === "TokenExpiredError") {
             try {
@@ -69,19 +65,17 @@ export const verifyAuth = (req, res, info) => {
                     role: refreshToken.role
                 }, process.env.ACCESS_KEY, { expiresIn: '1h' })
                 res.cookie('accessToken', newAccessToken, { httpOnly: true, path: '/api', maxAge: 60 * 60 * 1000, sameSite: 'none', secure: true })
-                res.locals.message = 'Access token has been refreshed. Remember to copy the new one in the headers of subsequent calls'
-                return true
+                res.locals.refreshedTokenMessage= 'Access token has been refreshed. Remember to copy the new one in the headers of subsequent calls'
+                return { authorized: true, cause: "Authorized" }
             } catch (err) {
                 if (err.name === "TokenExpiredError") {
-                    res.status(401).json({ message: "Perform login again" });
+                    return { authorized: false, cause: "Perform login again" }
                 } else {
-                    res.status(401).json({ message: err.name });
+                    return { authorized: false, cause: err.name }
                 }
-                return false;
             }
         } else {
-            res.status(401).json({ message: err.name });
-            return false;
+            return { authorized: false, cause: err.name };
         }
     }
 }

@@ -154,14 +154,14 @@ export const getGroups = async (req, res) => {
         const user = await verifyAuth(req, res);
          if (!user || !user.authorized)
          return res.status(401).json({ message: "Unauthorized" });
-        const groupname = req.params.groupname;
-        // Check if the group existsn
+
+        const groupname = req.params.name;
+        // console.log(groupname);
         const group = await Group.findOne({name : groupname});
-        console.log("Group name ",group);
+        console.log(groupname);
         if (!group) {
           return res.status(401).json({ error: 'Group does not exist' });
-        } 
-          //Show group's information
+        }
           res.status(200).json({ data: { name: group.name, members: group.members } });
       } 
       catch (err) {

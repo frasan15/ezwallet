@@ -12,17 +12,21 @@ import { verifyAuth } from './utils.js';
  */
 export const register = async (req, res) => {
     try {
+        
         const { username, email, password } = req.body;
         const existingUser = await User.findOne({ email: req.body.email });
         if (existingUser) return res.status(400).json({ message: "you are already registered" });
         const hashedPassword = await bcrypt.hash(password, 12);
+        console.log("fin qui ok");
         const newUser = await User.create({
             username,
             email,
             password: hashedPassword,
         });
+        console.log("fin qui ok");
         res.status(200).json('user added succesfully');
     } catch (err) {
+        //console.log("errore ehi")
         res.status(400).json(err);
     }
 };

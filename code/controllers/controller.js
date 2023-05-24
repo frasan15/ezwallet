@@ -31,13 +31,37 @@ export const createCategory = (req, res) => {
     - error 401 returned if the specified category does not exist
     - error 401 is returned if new parameters have invalid values
  */
-export const updateCategory = async (req, res) => {
-    try {
+    export const updateCategory = async (req, res) => {
+        try {
+            const cookie = req.cookies
+            if (!cookie.accessToken) {
+                return res.status(401).json({ message: "Unauthorized" }) // unauthorized
+            }
+            let {type, color} = req.body;
+            let t = typeof type;
+            let c = typeof color;
 
-    } catch (error) {
-        res.status(400).json({ error: error.message })
+            if (t !== "string" || c !== "string"){
+                return res.status(400).json({message: "the parameters have invalid values"})
+            }
+    
+            const modified = await categories.updateOne({type: req.params.type}, {$set: {type: type, color: color}});
+
+            if(modified.modifiedCount === 0){
+                return res.status(400).json({message: "the specified category does not exist"});
+            }
+
+            const data = await transactions.updateMany({type: req.params.type}, {$set: {type: type}});
+    
+            const result = {data: {count: data.modifiedCount}, message: "succesfull updating"};
+    
+            return res.json(result);
+    
+        } catch (error) {
+            res.status(400).json({ error: error.message })
+        }
     }
-}
+    
 
 /**
  * Delete a category

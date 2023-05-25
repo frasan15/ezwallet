@@ -182,65 +182,60 @@ export const getGroups = async (req, res) => {
     - error 401 is returned if all the `memberEmails` either do not exist or are already in a group
  */
     export const addToGroup = async (req, res) => {
-      try {        
-        const memberEmails = req.body;
-        const groupname = req.params.groupname;;
-        // find specific group
-        const group = await Group.findOne({name: groupname});
+      try {
+        const user = await verifyAuth(req, res);
+         if (!user || !user.authorized)
+         return res.status(401).json({ message: "Unauthorized" }); 
+        const {memberEmails} = req.body;
+        
+        // Find group by params
+        const groupName = req.params.name; 
+        const group = await Group.findOne({ name: groupName });
         if (!group) {
-          return res.status(401).json({ message: "Group does not exist" });
+          return res.status(401).json({ message: "Group does not exist. create it first" });
         }
-        // check to email be registered 
-        const groupMembers = group.members.map((member) => member.email);
-        const alreadyInGroup = [];
-        const membersNotFound = [];
+       // Get emails from that specific Group
+        let groupMembers = group.members.map((member) => member.email); 
+        console.log("groupmembers", groupMembers);
+        let alreadyInGroup = [];
+        let membersNotFound = [];
+        let NotRegistredUsers =[];
 
+        
+        // Check each member email
         for (const email of memberEmails) {
-          const user = await User.findOne({ email: email });
-          if (!user) {
-            membersNotFound.push(email);
-            continue;
-          } else {
-            const isInGroup = await Group.findOne({
-              members: { $elemMatch: { email: email } },
-            });
-            if (isInGroup) {
-              alreadyInGroup.push(email);
-              continue;
-            }
-          }
-          members.push({ email: email, user: user._id });
+          //check for registration of emails
+          const Userisregistered = User.findOne({email: { $elemMatch: {email: email}} ,});
+          if (!Userisregistered){
+            NotRegistredUsers.push(email);
+            res.status(401).json({ data: NotRegistredUsers , message: " this email is not registered"});
+            continue ;
+          } 
+          else {
+           if (groupMembers.includes(email)) {
+              alreadyInGroup.push(email);  
+            }else {
+              membersNotFound.push(email);
+              group.members.push({email}); 
+              } 
         }
-        if (
-          alreadyInGroup.length === memberEmails.length ||
-          membersNotFound.length === memberEmails.length
-        ) {
-          return res.status(401).json({
-            message: "All users already in group or none were found in system",
-          });
-        }
-
-        // save data of that specific group
+      }
+       // Save the updated group
         await group.save();
-        const groupInfo = {
-          name: group.name,
-          members: group.members,
-        };
-    
         const responseData = {
-          group: groupInfo,
+          group: {
+            name: group.name,
+            members: group.members,
+          },
           alreadyInGroup,
           membersNotFound,
         };
     
         res.json({ data: responseData });
-
-        }
-
-      catch (err) {
+      } catch (err) {
         res.status(500).json(err.message);
       }
-    };
+    }
       
     
 

@@ -53,12 +53,12 @@ export const createCategory = (req, res) => {
 
             const data = await transactions.updateMany({type: req.params.type}, {$set: {type: type}});
     
-            const result = {data: {count: data.modifiedCount}, message: "succesfull updating"};
+            const result = {data: {count: data.modifiedCount, message: "succesfull updating"}, message: res.locals.message};
     
             return res.json(result);
     
         } catch (error) {
-            res.status(400).json({ error: error.message })
+            res.status(500).json({ error: error.message })
         }
     }
     
@@ -70,13 +70,57 @@ export const createCategory = (req, res) => {
   - Optional behavior:
     - error 401 is returned if the specified category does not exist
  */
-export const deleteCategory = async (req, res) => {
-    try {
+    export const deleteCategory = async (req, res) => {
+        try {
+            const cookie = req.cookies
+            if (!cookie.accessToken) {
+                return res.status(401).json({ message: "Unauthorized" }) // unauthorized
+            }
 
-    } catch (error) {
-        res.status(400).json({ error: error.message })
+            let count = 0;
+            const {list} = req.body;
+
+            for(const i of list){
+                const check1 = await categories.findOne({type: i});
+                if(check1 === null){
+                    return res.status(400).json({message: `the category ${i} does not exist`});
+                }
+            }
+    
+            for (const i of list){
+
+                const remained_categories = await categories.count();
+                
+                if(remained_categories === 1){
+                    return res.json({message: `${i} is the last category left, it is not possible to remove it`, count: count})
+                } 
+
+                
+
+                const cancelled = await categories.deleteOne({type: i});
+                const a = await categories.findOne({}, {_id: 0, type: 1});
+                console.log(a);
+                
+                const transaction_changed = await transactions.updateMany({type: i }, {$set: {type: a.type}})
+                count += transaction_changed.modifiedCount;
+
+                //console.log(cancelled);
+                
+            }
+    
+            
+            const result = {data: {message: "categories correctly deleted", count: count}, message: res.locals.message}
+    
+            return res.json(result);
+    
+            //for each category i must check if it is contained inside the list of the categories to be deleted; at the end I have to
+            //return the new array or just the original array with less element?
+    
+        } catch (error) {
+            res.status(500).json({ error: error.message })
+        }
     }
-}
+    
 
 /**
  * Return all the categories

@@ -38,12 +38,36 @@ export const createCategory = (req, res) => {
     - error 401 returned if the specified category does not exist
     - error 401 is returned if new parameters have invalid values
  */
-export const updateCategory = async (req, res) => {
-  try {
-  } catch (error) {
-    res.status(400).json({ error: error.message });
+    export const updateCategory = async (req, res) => {
+      try {
+          const cookie = req.cookies
+          if (!cookie.accessToken) {
+              return res.status(401).json({ message: "Unauthorized" }) // unauthorized
+          }
+          let {type, color} = req.body;
+          let t = typeof type;
+          let c = typeof color;
+
+          if (t !== "string" || c !== "string"){
+              return res.status(400).json({message: "the parameters have invalid values"})
+          }
+  
+          const modified = await categories.updateOne({type: req.params.type}, {$set: {type: type, color: color}});
+
+          if(modified.modifiedCount === 0){
+              return res.status(400).json({message: "the specified category does not exist"});
+          }
+
+          const data = await transactions.updateMany({type: req.params.type}, {$set: {type: type}});
+          const result = {data: {count: data.modifiedCount, message: "succesfull updating"}, message: res.locals.message};
+  
+          return res.json(result);
+  
+      } catch (error) {
+          res.status(500).json({ error: error.message })
+      }
   }
-};
+
 
 /**
  * Delete a category
@@ -52,12 +76,45 @@ export const updateCategory = async (req, res) => {
   - Optional behavior:
     - error 401 is returned if the specified category does not exist
  */
-export const deleteCategory = async (req, res) => {
-  try {
-  } catch (error) {
-    res.status(400).json({ error: error.message });
+    export const deleteCategory = async (req, res) => {
+      try {
+          const cookie = req.cookies
+          if (!cookie.accessToken) {
+              return res.status(401).json({ message: "Unauthorized" }) // unauthorized
+          }
+
+          let count = 0;
+          const {list} = req.body;
+
+          for(const i of list){
+              const check1 = await categories.findOne({type: i});
+              if(check1 === null){
+                  return res.status(400).json({message: `the category ${i} does not exist`});
+              }
+          }
+  
+          for (const i of list){
+              const remained_categories = await categories.count();
+              
+              if(remained_categories === 1){
+                  return res.json({message: `${i} is the last category left, it is not possible to remove it`, count: count})
+              } 
+              
+              const cancelled = await categories.deleteOne({type: i});
+              const a = await categories.findOne({}, {_id: 0, type: 1});
+              
+              const transaction_changed = await transactions.updateMany({type: i }, {$set: {type: a.type}})
+              count += transaction_changed.modifiedCount;
+          }
+
+          const result = {data: {message: "categories correctly deleted", count: count}, message: res.locals.message}
+          return res.json(result);
+  
+      } catch (error) {
+          res.status(500).json({ error: error.message })
+      }
   }
-};
+
 
 /**
  * Return all the categories

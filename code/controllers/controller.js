@@ -94,17 +94,13 @@ export const createCategory = (req, res) => {
                 if(remained_categories === 1){
                     return res.json({message: `${i} is the last category left, it is not possible to remove it`, count: count})
                 } 
-
                 
-
                 const cancelled = await categories.deleteOne({type: i});
                 const a = await categories.findOne({}, {_id: 0, type: 1});
-                console.log(a);
                 
                 const transaction_changed = await transactions.updateMany({type: i }, {$set: {type: a.type}})
                 count += transaction_changed.modifiedCount;
 
-                //console.log(cancelled);
                 
             }
     

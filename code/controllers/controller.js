@@ -1,6 +1,10 @@
 import { categories, transactions } from "../models/model.js";
 import { Group, User } from "../models/User.js";
-import { handleDateFilterParams, handleAmountFilterParams, verifyAuth } from "./utils.js";
+import {
+  handleDateFilterParams,
+  handleAmountFilterParams,
+  verifyAuth,
+} from "./utils.js";
 
 /**
  * Create a new category
@@ -8,20 +12,23 @@ import { handleDateFilterParams, handleAmountFilterParams, verifyAuth } from "./
   - Response `data` Content: An object having attributes `type` and `color`
  */
 export const createCategory = (req, res) => {
-    try {
-        const cookie = req.cookies
-        if (!cookie.accessToken) {
-            return res.status(401).json({ message: "Unauthorized" }) // unauthorized
-        }
-        const { type, color } = req.body;
-        const new_categories = new categories({ type, color });
-        new_categories.save()
-            .then(data => res.json(data))
-            .catch(err => { throw err })
-    } catch (error) {
-        res.status(400).json({ error: error.message })
+  try {
+    const cookie = req.cookies;
+    if (!cookie.accessToken) {
+      return res.status(401).json({ message: "Unauthorized" }); // unauthorized
     }
-}
+    const { type, color } = req.body;
+    const new_categories = new categories({ type, color });
+    new_categories
+      .save()
+      .then((data) => res.json(data))
+      .catch((err) => {
+        throw err;
+      });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
 
 /**
  * Edit a category's type or color
@@ -126,20 +133,22 @@ export const createCategory = (req, res) => {
     - empty array is returned if there are no categories
  */
 export const getCategories = async (req, res) => {
-    try {
-        const cookie = req.cookies
-        if (!cookie.accessToken) {
-            return res.status(401).json({ message: "Unauthorized" }) // unauthorized
-        }
-        let data = await categories.find({})
-
-        let filter = data.map(v => Object.assign({}, { type: v.type, color: v.color }))
-
-        return res.json(filter)
-    } catch (error) {
-        res.status(400).json({ error: error.message })
+  try {
+    const cookie = req.cookies;
+    if (!cookie.accessToken) {
+      return res.status(401).json({ message: "Unauthorized" }); // unauthorized
     }
-}
+    let data = await categories.find({});
+
+    let filter = data.map((v) =>
+      Object.assign({}, { type: v.type, color: v.color })
+    );
+
+    return res.json(filter);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
 
 /**
  * Create a new transaction made by a specific user
@@ -149,20 +158,39 @@ export const getCategories = async (req, res) => {
     - error 401 is returned if the username or the type of category does not exist
  */
 export const createTransaction = async (req, res) => {
-    try {
-        const cookie = req.cookies
-        if (!cookie.accessToken) {
-            return res.status(401).json({ message: "Unauthorized" }) // unauthorized
-        }
-        const { username, amount, type } = req.body;
-        const new_transactions = new transactions({ username, amount, type });
-        new_transactions.save()
-            .then(data => res.json(data))
-            .catch(err => { throw err })
-    } catch (error) {
-        res.status(400).json({ error: error.message })
+  try {
+    const cookie = req.cookies;
+    if (!cookie.accessToken) {
+      return res.status(401).json({ message: "Unauthorized" }); // unauthorized
     }
-}
+    const { username, amount, type } = req.body;
+    if (typeof amount !== "number") {
+      return res.status(400).json({
+        data: null,
+        message: "Amount must be a number",
+      });
+    }
+    if (!username || !amount || !type) {
+      return res.status(400).json({
+        data: null,
+        message: "Bad request: missing parameters",
+      });
+    }
+    const category = await categories.findOne({ type: type });
+    if (!category) {
+      return res.status(401).json({ message: "Category does not exist" });
+    }
+    const new_transactions = new transactions({ username, amount, type });
+    new_transactions
+      .save()
+      .then((data) => res.json(data))
+      .catch((err) => {
+        throw err;
+      });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
 
 /**
  * Return all transactions made by all users
@@ -172,32 +200,125 @@ export const createTransaction = async (req, res) => {
     - empty array must be returned if there are no transactions
  */
 export const getAllTransactions = async (req, res) => {
-    try {
-        const cookie = req.cookies
-        if (!cookie.accessToken) {
-            return res.status(401).json({ message: "Unauthorized" }) // unauthorized
-        }
-        /**
-         * MongoDB equivalent to the query "SELECT * FROM transactions, categories WHERE transactions.type = categories.type"
-         */
-        transactions.aggregate([
-            {
-                $lookup: {
-                    from: "categories",
-                    localField: "type",
-                    foreignField: "type",
-                    as: "categories_info"
-                }
-            },
-            { $unwind: "$categories_info" }
-        ]).then((result) => {
-            let data = result.map(v => Object.assign({}, { _id: v._id, username: v.username, amount: v.amount, type: v.type, color: v.categories_info.color, date: v.date }))
-            res.json(data);
-        }).catch(error => { throw (error) })
-    } catch (error) {
-        res.status(400).json({ error: error.message })
+  try {
+    const cookie = req.cookies;
+    if (!cookie.accessToken) {
+      return res.status(401).json({ message: "Unauthorized" }); // unauthorized
     }
-}
+    /**
+     * MongoDB equivalent to the query "SELECT * FROM transactions, categories WHERE transactions.type = categories.type"
+     */
+    transactions
+      .aggregate([
+        {
+          $lookup: {
+            from: "categories",
+            localField: "type",
+            foreignField: "type",
+            as: "categories_info",
+          },
+        },
+        { $unwind: "$categories_info" },
+      ])
+      .then((result) => {
+        if (result.length == 0)
+          return res.json({
+            data: [],
+            message: "No transactions found",
+          });
+        let data = result.map((v) =>
+          Object.assign(
+            {},
+            {
+              _id: v._id,
+              username: v.username,
+              amount: v.amount,
+              type: v.type,
+              color: v.categories_info.color,
+              date: v.date,
+            }
+          )
+        );
+        res.json(data);
+      })
+      .catch((error) => {
+        throw error;
+      });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+const searchUserAndCheckAdmin = async (req, res, isAdminRoute) => {
+  if (!req.params.username) {
+    res.status(400).json({
+      message: "Username invalid",
+    });
+    return true;
+  }
+  const user = await User.findOne({ username: req.params.username });
+  if (!user) {
+    res.status(401).json({
+      message: "User not found",
+    });
+    return true;
+  }
+  const cookie = req.cookies;
+  if (!cookie.refreshToken && !isAdminRoute) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  if (!isAdminRoute) {
+    const userWhoMadeRequest = await User.findOne({
+      refreshToken: req.cookies.refreshToken,
+    });
+    if (
+      userWhoMadeRequest.username != req.params.username &&
+      userWhoMadeRequest.role != "Admin"
+    ) {
+      res.status(401).json({
+        message: "User does not have the privileges to access this resource",
+      });
+      return true;
+    }
+  }
+  return false;
+};
+
+const commonTransactionsByUser = async (req, res) => {
+  const allTransactions = await transactions.aggregate([
+    {
+      $match: {
+        username: req.params.username,
+      },
+    },
+    {
+      $lookup: {
+        from: "categories",
+        localField: "type",
+        foreignField: "type",
+        as: "categories_info",
+      },
+    },
+    { $unwind: "$categories_info" },
+    {
+      $match: req.params.category
+        ? { "categories_info.type": req.params.category }
+        : {},
+    },
+    { $addFields: { color: "$categories_info.color" } },
+    { $project: { categories_info: 0, __v: 0 } },
+  ]);
+  if (allTransactions.length == 0) {
+    return res.json({
+      data: [],
+      message: "No transactions found",
+    });
+  }
+  res.json({
+    data: allTransactions,
+    message: "Success",
+  });
+};
 
 /**
  * Return all transactions made by a specific user
@@ -209,16 +330,17 @@ export const getAllTransactions = async (req, res) => {
     - if there are query parameters and the function has been called by a Regular user then the returned transactions must be filtered according to the query parameters
  */
 export const getTransactionsByUser = async (req, res) => {
-    try {
-        //Distinction between route accessed by Admins or Regular users for functions that can be called by both
-        //and different behaviors and access rights
-        if (req.url.indexOf("/transactions/users/") >= 0) {
-        } else {
-        }
-    } catch (error) {
-        res.status(400).json({ error: error.message })
-    }
-}
+  try {
+    //Distinction between route accessed by Admins or Regular users for functions that can be called by both
+    //and different behaviors and access rights
+    const isAdminRoute = req.url.includes("/transactions/users/");
+    const shouldReturn = await searchUserAndCheckAdmin(req, res, isAdminRoute);
+    if (shouldReturn) return;
+    commonTransactionsByUser(req, res);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
 
 /**
  * Return all transactions made by a specific user filtered by a specific category
@@ -229,11 +351,111 @@ export const getTransactionsByUser = async (req, res) => {
     - error 401 is returned if the user or the category does not exist
  */
 export const getTransactionsByUserByCategory = async (req, res) => {
-    try {
-    } catch (error) {
-        res.status(400).json({ error: error.message })
+  try {
+    if (!req.params.category) {
+      return res.status(400).json({
+        message: "Category invalid",
+      });
     }
-}
+    const category = await categories.findOne({ type: req.params.category });
+    if (!category) {
+      return res.status(401).json({
+        message: "Category not found",
+      });
+    }
+    const isAdminRoute = req.url.includes("/transactions/users/");
+    const shouldReturn = await searchUserAndCheckAdmin(req, res, isAdminRoute);
+    if (shouldReturn) return;
+    commonTransactionsByUser(req, res);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+const searchGroupAndCheckAdmin = async (req, res, checkAdmin) => {
+  if (!req.params.name) {
+    res.status(400).json({
+      message: "Group invalid",
+    });
+    return true;
+  }
+  const group = await Group.findOne({ username: req.params.name });
+  if (!group) {
+    res.status(401).json({
+      message: "Group not found",
+    });
+    return true;
+  }
+  const cookie = req.cookies;
+  if (!cookie.refreshToken && checkAdmin) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  if (checkAdmin) {
+    const userWhoMadeRequest = await User.findOne({
+      refreshToken: cookie.refreshToken,
+    });
+    if (!userWhoMadeRequest || userWhoMadeRequest.role != "Admin") {
+      res.status(401).json({
+        message: "User does not have the privileges to access this resource",
+      });
+      return true;
+    }
+  }
+  return false;
+};
+
+const commonTransactionsByGroup = async (req, res, isAdmin) => {
+  const allTransactions = [];
+  const group = await Group.findOne({ name: req.params.name });
+  if (!isAdmin) {
+    // if user is not admin, check if user is in group
+    const userWhoMadeRequest = await User.findOne({
+      refreshToken: req.cookies.refreshToken,
+    });
+    const isUserInGroup =
+      group.members.findIndex(
+        (member) => member.email == userWhoMadeRequest.email
+      ) == -1;
+    if (isUserInGroup) {
+      return res.status(401).json({
+        message: "User is not in the group",
+      });
+    }
+  }
+  for (const member of group.members) {
+    const user = await User.findOne({ email: member.email });
+    const singleUserTransactions = await transactions.aggregate([
+      {
+        $match: {
+          username: user.username,
+        },
+      },
+      {
+        $lookup: {
+          from: "categories",
+          localField: "type",
+          foreignField: "type",
+          as: "categories_info",
+        },
+      },
+      { $unwind: "$categories_info" },
+      {
+        $match: req.params.category
+          ? { "categories_info.type": req.params.category }
+          : {},
+      },
+      { $addFields: { color: "$categories_info.color" } },
+      { $project: { categories_info: 0, __v: 0 } },
+    ]);
+    if (singleUserTransactions.length !== 0) {
+      allTransactions.push(...singleUserTransactions);
+    }
+  }
+  return res.json({
+    data: allTransactions,
+    message: "Success",
+  });
+};
 
 /**
  * Return all transactions made by members of a specific group
@@ -244,11 +466,15 @@ export const getTransactionsByUserByCategory = async (req, res) => {
     - empty array must be returned if there are no transactions made by the group
  */
 export const getTransactionsByGroup = async (req, res) => {
-    try {
-    } catch (error) {
-        res.status(400).json({ error: error.message })
-    }
-}
+  try {
+    const isAdminRoute = req.url.includes("/transactions/groups");
+    const shouldReturn = await searchGroupAndCheckAdmin(req, res, isAdminRoute);
+    if (shouldReturn) return;
+    commonTransactionsByGroup(req, res, isAdminRoute);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
 
 /**
  * Return all transactions made by members of a specific group filtered by a specific category
@@ -259,11 +485,26 @@ export const getTransactionsByGroup = async (req, res) => {
     - empty array must be returned if there are no transactions made by the group with the specified category
  */
 export const getTransactionsByGroupByCategory = async (req, res) => {
-    try {
-    } catch (error) {
-        res.status(400).json({ error: error.message })
+  try {
+    if (!req.params.category) {
+      return res.status(400).json({
+        message: "Category invalid",
+      });
     }
-}
+    const category = await categories.findOne({ type: req.params.category });
+    if (!category) {
+      return res.status(401).json({
+        message: "Category not found",
+      });
+    }
+    const isAdminRoute = req.url.includes("/transactions/groups");
+    const shouldReturn = await searchGroupAndCheckAdmin(req, res, isAdminRoute);
+    if (shouldReturn) return;
+    commonTransactionsByGroup(req, res, isAdminRoute);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
 
 /**
  * Delete a transaction made by a specific user
@@ -273,17 +514,15 @@ export const getTransactionsByGroupByCategory = async (req, res) => {
     - error 401 is returned if the user or the transaction does not exist
  */
 export const deleteTransaction = async (req, res) => {
-    try {
-        const cookie = req.cookies
-        if (!cookie.accessToken) {
-            return res.status(401).json({ message: "Unauthorized" }) // unauthorized
-        }
-        let data = await transactions.deleteOne({ _id: req.body._id });
-        return res.json("deleted");
-    } catch (error) {
-        res.status(400).json({ error: error.message })
-    }
-}
+  try {
+    const shouldReturn = await searchUserAndCheckAdmin(req, res, false);
+    if (shouldReturn) return;
+    await transactions.deleteOne({ _id: req.body._id });
+    return res.json({message: "deleted"});
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
 
 /**
  * Delete multiple transactions identified by their ids
@@ -293,8 +532,8 @@ export const deleteTransaction = async (req, res) => {
     - error 401 is returned if at least one of the `_ids` does not have a corresponding transaction. Transactions that have an id are not deleted in this case
  */
 export const deleteTransactions = async (req, res) => {
-    try {
-    } catch (error) {
-        res.status(400).json({ error: error.message })
-    }
-}
+  try {
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};

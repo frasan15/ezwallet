@@ -117,7 +117,7 @@ export const createGroup = async (req, res) => {
 export const getGroups = async (req, res) => {
   try {
     // verify auth using utils function
-    const user = await verifyAuth(req, res);
+    const user = verifyAuth(req, res);
     if (!user || !user.authorized)
       return res.status(401).json({ message: "Unauthorized" });
     const groups = await Group.find();

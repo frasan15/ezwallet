@@ -1,6 +1,7 @@
 import { Group, User } from "../models/User.js";
 import { transactions } from "../models/model.js";
 import { verifyAuth } from "./utils.js";
+import { getAllTransactions } from "./controller.js";
 
 
 // This function checks the format of input Emails 
@@ -20,8 +21,25 @@ const isValidEmail = (email) => {
  */
 export const getUsers = async (req, res) => {
   try {
-    const users = await User.find();
-    res.status(200).json(users);
+
+    const cookie = req.cookies;
+    if (!cookie.accessToken) {
+      return res.status(401).json({ message: "Unauthorized" }); // unauthorized
+    }
+
+    // check if user is admin
+
+    const users = await User.find({}, 'username email role -_id')
+    .then(users => {
+      // Check if any users are found
+      if (users.length === 0) {
+        return []; // Return an empty array if there are no users
+      }
+
+      // Return the array of users
+      return users;})
+
+    res.status(200).json({data: users, refreshedTokenMessage: res.locals.refreshedTokenMessage});
   } catch (error) {
     res.status(500).json(error.message);
   }
@@ -343,9 +361,41 @@ export const removeFromGroup = async (req, res) => {
     - error 401 is returned if the user does not exist 
  */
 export const deleteUser = async (req, res) => {
+
   try {
-  } catch (err) {
-    res.status(500).json(err.message);
+    // check if user is admin
+    // check if email is in correct form
+
+    const { email } = req.body;
+
+    if (email===null || email===undefined) {
+      return res.status(400).json({ error: 'email is missing' });
+    }
+  
+    if (email.trim() === '') {
+      return res.status(400).json({ error: 'email cannot be empty' });
+    }
+
+    const deletedUser = await User.findOneAndDelete({ email: req.body.email });
+
+    if(!deletedUser){
+      return res.status(400).json({message: "email does not represent a user in the database"});
+    }
+
+    const userTransactions = await transactions.find({
+        username: deletedUser.username
+    });
+
+    const idList = userTransactions.map(transaction => transaction._id);
+
+    const deletedTransactions = await transactions.deleteMany({ _id: { $in: idList } });
+
+    // check if user is in a group
+
+    return res.status(200).json({data: {deletedTransaction: deletedTransactions.deletedCount, deletedFromGroup: true}, refreshedTokenMessage: res.locals.refreshedTokenMessage})
+
+  } catch (error) {
+    return res.status(500).json({ message: "Error" });
   }
 };
 

@@ -22,8 +22,28 @@ import jwt from 'jsonwebtoken'
 - Throws an error if `date` is present in the query parameter together with at least one of `from` or `upTo`
 - Throws an error if the value of any of the three query parameters is not a string that represents a date in the format **YYYY-MM-DD**
  */
-export const handleDateFilterParams = (req) => {
-}
+ export const handleDateFilterParams = (req) => {
+    const filter = {};
+  
+    const { date, from, upTo } = req.query;
+  
+    if (date && (from || upTo)) {
+      throw new Error('Invalid query parameters. Cannot use "date" together with "from" or "upTo".');
+    }
+  
+    if (date) {
+      filter.date = { $gte: new Date(`${date}T00:00:00.000Z`), $lte: new Date(`${date}T23:59:59.999Z`) };
+    } else if (from && upTo) {
+      filter.date = { $gte: new Date(`${from}T00:00:00.000Z`), $lte: new Date(`${upTo}T23:59:59.999Z`) };
+    } else if (from) {
+      filter.date = { $gte: new Date(`${from}T00:00:00.000Z`) };
+    } else if (upTo) {
+      filter.date = { $lte: new Date(`${upTo}T23:59:59.999Z`) };
+    }
+  
+    return filter;
+  };
+  
 
 /**
  * Handle possible authentication modes depending on `authType`
@@ -115,11 +135,27 @@ export const verifyAuth = (req, res, info) => {
   - If both `min` and `max` are present then both `$gte` and `$lte` must be included
 - Throws an error if the value of any of the two query parameters is not a numerical value
  */
-export const handleAmountFilterParams = (req) => {
-}
+ export const handleAmountFilterParams = (req) => {
+    const filter = {};
+  
+    const { min, max } = req.query;
 
-// This function checks the format of input Emails 
-export const isValidEmail = (email) => {
-  const emailformat = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailformat.test(email);
-};
+    const handleNumericValue = (value) => {
+      if (typeof value !== 'number' || isNaN(value)) {
+        throw new Error(`Invalid value`);
+      }
+      const numericValue = Number(value);
+      return numericValue;
+    };
+
+    if (min && max) {
+      filter.amount = { $gte: handleNumericValue(min), $lte: handleNumericValue(max) };
+    } else if (min) {
+      filter.amount = { $gte: handleNumericValue(min) };
+    } else if (max) {
+      filter.amount = { $lte: handleNumericValue(max) };
+    }
+  
+    return filter;
+  };
+  

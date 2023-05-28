@@ -55,12 +55,6 @@ export const createCategory = (req, res) => {
     export const updateCategory = async (req, res) => {
       try {
           const cookie = req.cookies
-          /*
-          if (!cookie.accessToken) {
-              return res.status(401).json({ error: "Unauthorized" }) // unauthorized
-          }
-          this check should be useless since these kind of control are already performed inside the verifyAuth function.
-          */
           const adminAuth = verifyAuth(req, res, {authType: "Admin"});
           if(!adminAuth.authorized){
             return res.status(401).json({error: "unauthorised, only admins have access this feature"})
@@ -115,12 +109,6 @@ export const createCategory = (req, res) => {
  */
     export const deleteCategory = async (req, res) => {
       try {
-        /*
-          const cookie = req.cookies
-          if (!cookie.accessToken) {
-              return res.status(401).json({ error: "Unauthorized" }) // unauthorized
-          } commented for the same reason I commented the previous function*/
-
           const adminAuth = verifyAuth(req, res, {authType: "Admin"});
           if(!adminAuth.authorized){
             return res.status(401).json({error: "unauthorised, only admins have access to this feature"})
@@ -132,25 +120,6 @@ export const createCategory = (req, res) => {
           if(!types){
             return res.status(400).json({error: "missing parameters"});
           }
-          /*
-          TODO: implement the right sorting
-          const ce = await categories.find();
-          //console.log(ce);
-
-          const categoriesExisting = await categories.find().sort({createdAt: -1});
-          for(const i of categoriesExisting){
-            console.log(i.createdAt);
-          }
-          //console.log(categoriesExisting);
-          const ce1 = await categories.find();
-          //console.log(ce1);
-
-          */
-          const ce = await categories.find();
-          console.log(ce);
-          //const cat = await categories.findOne({}, {}, {sort: {createdAt: -1}});
-          const cat = await categories.find({}).sort({createdAt: -1}).limit(1).select("type");
-          console.log(cat[0].type);
  
           for(const i of types){
             if(i.trim() === ""){
@@ -162,8 +131,6 @@ export const createCategory = (req, res) => {
               }
           }
 
-          
-  
           for (const i of types){
               const remained_categories = await categories.count();
               

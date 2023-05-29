@@ -159,3 +159,8 @@ export const verifyAuth = (req, res, info) => {
     return filter;
   };
   
+  export const isValidEmail = (email) => {
+    const emailformat = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailformat.test(email);
+  };
+  

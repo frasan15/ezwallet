@@ -3,25 +3,37 @@ import { Group, User } from "../models/User.js";
 import { handleDateFilterParams, handleAmountFilterParams, verifyAuth } from "./utils.js";
 
 /**
- * Create a new category
-  - Request Body Content: An object having attributes `type` and `color`
-  - Response `data` Content: An object having attributes `type` and `color`
+ * 
+- Request Parameters: None
+- Request Body Content: An object having attributes `type` and `color`
+  - Example: `{type: "food", color: "red"}`
+- Response `data` Content: An object having attributes `type` and `color`
+  - Example: `res.status(200).json({data: {type: "food", color: "red"}, refreshedTokenMessage: res.locals.refreshedTokenMessage})`
+- Returns a 400 error if the request body does not contain all the necessary attributes
+- Returns a 400 error if at least one of the parameters in the request body is an empty string
+- Returns a 400 error if the type of category passed in the request body represents an already existing category in the database
+- Returns a 401 error if called by an authenticated user who is not an admin (authType = Admin)
  */
-export const createCategory = (req, res) => {
+export const createCategory = async (req, res) => {
     try {
-        const cookie = req.cookies
-        if (!cookie.accessToken) {
-            return res.status(401).json({ message: "Unauthorized" }) // unauthorized
-        }
+        const Admin= verifyAuth(req, res, { authType: "Admin" });
+        if (!Admin) 
+        return res.status(401).json({ message: "Unauthorized" }) // unauthorized
         const { type, color } = req.body;
-        const new_categories = new categories({ type, color });
-        new_categories.save()
-            .then(data => res.json(data))
-            .catch(err => { throw err })
-    } catch (error) {
+        if (!type || !color)
+        return res.status(400).json({message: "Missing or wrong parameters"});
+        if (type.length==0 || color.length==0)
+        return res.status(400).json({message: "empty string not acceptable"});
+        const category = await categories.findOne({type: type});
+        if (category) 
+        return res.status(400).json({message: "category already exist"})
+        const new_categories =await new categories({ type: type, color:color }).save();
+        return res.status(200).json({data :{new_categories} , refreshedTokenMessage: res.locals.refreshedTokenMessage});
+        }
+        catch (error) {
         res.status(400).json({ error: error.message })
     }
-}
+};
 
 /**
  * Edit a category's type or color
@@ -55,27 +67,28 @@ export const deleteCategory = async (req, res) => {
 }
 
 /**
- * Return all the categories
-  - Request Body Content: None
-  - Response `data` Content: An array of objects, each one having attributes `type` and `color`
-  - Optional behavior:
-    - empty array is returned if there are no categories
+ * 
+- Request Parameters: None
+- Request Body Content: None
+- Response `data` Content: An array of objects, each one having attributes `type` and `color`
+  - Example: `res.status(200).json({data: [{type: "food", color: "red"}, {type: "health", color: "green"}], refreshedTokenMessage: res.locals.refreshedTokenMessage})`
+- Returns a 401 error if called by a user who is not authenticated (authType = Simple)
+
  */
 export const getCategories = async (req, res) => {
     try {
-        const cookie = req.cookies
-        if (!cookie.accessToken) {
-            return res.status(401).json({ message: "Unauthorized" }) // unauthorized
-        }
+        const user= verifyAuth(req, res, { authType: "Simple" })
+        if (!user || !user.authorized)
+        return res.status(401).json({message: "Unauthorized"})
         let data = await categories.find({})
-
         let filter = data.map(v => Object.assign({}, { type: v.type, color: v.color }))
-
-        return res.json(filter)
-    } catch (error) {
+        return res.status(200).json({data: {filter},refreshedTokenMessage: res.locals.refreshedTokenMessage })
+    } 
+    catch (error) {
         res.status(400).json({ error: error.message })
     }
-}
+};
+
 
 /**
  * Create a new transaction made by a specific user

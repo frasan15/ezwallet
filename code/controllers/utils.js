@@ -76,6 +76,8 @@ import jwt from 'jsonwebtoken'
 - Refreshes the `accessToken` if it has expired and the `refreshToken` allows authentication; sets the `refreshedTokenMessage` to inform users that the `accessToken` must be changed
  */
 export const verifyAuth = (req, res, info) => {
+    const info1 = {info};
+
     const cookie = req.cookies
     if (!cookie.accessToken || !cookie.refreshToken) {
         return { authorized: false, cause: "Unauthorized" };
@@ -90,9 +92,43 @@ export const verifyAuth = (req, res, info) => {
             return { authorized: false, cause: "Token is missing information" }
         }
         if (decodedAccessToken.username !== decodedRefreshToken.username || decodedAccessToken.email !== decodedRefreshToken.email || decodedAccessToken.role !== decodedRefreshToken.role) {
-            return { authorized: false, cause: "Mismatched users" };
+          return { authorized: false, cause: "Mismatched users" };
         }
-        return { authorized: true, cause: "Authorized" }
+        
+        const authType = info1.info.authType;
+        switch(authType){
+          case "Simple":
+            return { authorized: true, cause: "Authorized" }
+
+          case "User":
+            const username = info1.info.username;
+            if(username !== decodedAccessToken.username || username !== decodedRefreshToken){
+              return { authorized: false, cause: "username does not match the related user's token" }
+            }else{
+              return { authorized: true, cause: "Authorized" };
+            }
+
+          case "Admin":
+            if(decodedAccessToken.role !== "Admin" || decodedRefreshToken.role !== "Admin"){
+              return { authorized: false, cause: "function reserved for admins only"};
+            }else{
+              return { authorized: true, cause: "Authorized"};
+            }
+
+          case "Group":
+            const emails = info1.info.emails;
+            const find = emails.find((x) => x === decodedAccessToken.email);
+            const find1 = emails.find((x) => x === decodedRefreshToken.email);
+            if(!find || !find1){
+              return { authorized: false, cause: "unauthorized, you are not part of the requested group"};
+            }else{
+              return { authorized: true, cause: "Authorized" };
+            }
+            
+          default:
+            return { authorized: false, cause: "invalid authentication type"};
+        } 
+
     } catch (err) {
         if (err.name === "TokenExpiredError") {
             try {
@@ -102,7 +138,7 @@ export const verifyAuth = (req, res, info) => {
                     email: refreshToken.email,
                     id: refreshToken.id,
                     role: refreshToken.role
-                }, process.env.ACCESS_KEY, { expiresIn: '1h' })
+                }, process.env.ACCESS_KEY, { expiresIn: '1h' }) 
                 res.cookie('accessToken', newAccessToken, { httpOnly: true, path: '/api', maxAge: 60 * 60 * 1000, sameSite: 'none', secure: true })
                 res.locals.refreshedTokenMessage= 'Access token has been refreshed. Remember to copy the new one in the headers of subsequent calls'
                 return { authorized: true, cause: "Authorized" }

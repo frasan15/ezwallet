@@ -25,16 +25,13 @@ export const register = async (req, res) => {
         const existingUser1 = await User.findOne({username: req.body.username});
         if (existingUser || existingUser1) return res.status(400).json({ message: "you are already registered" });
         const hashedPassword = await bcrypt.hash(password, 12);
-        console.log("fin qui ok");
         const newUser = await User.create({
             username,
             email,
             password: hashedPassword,
         });
-        console.log("fin qui ok");
         res.status(200).json('user added succesfully');
     } catch (err) {
-        //console.log("errore ehi")
         res.status(400).json(err);
     }
 };
@@ -136,7 +133,7 @@ export const logout = async (req, res) => {
         res.cookie("accessToken", "", { httpOnly: true, path: '/api', maxAge: 0, sameSite: 'none', secure: true })
         res.cookie('refreshToken', "", { httpOnly: true, path: '/api', maxAge: 0, sameSite: 'none', secure: true })
         const savedUser = await user.save()
-        res.status(200).json({data: {message: 'logged out'}})
+        res.status(200).json({data: {message: 'User logged out'}})
     } catch (error) {
         res.status(400).json(error)
     }

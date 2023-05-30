@@ -120,6 +120,10 @@ export const createCategory = (req, res) => {
           if(!types){
             return res.status(400).json({error: "missing parameters"});
           }
+
+          if(await categories.count() === 1){
+            return res.status(400).json({error: "there is only one category left, it is not possible to remove it"});
+          }
  
           for(const i of types){
             if(i.trim() === ""){
@@ -130,13 +134,19 @@ export const createCategory = (req, res) => {
                   return res.status(400).json({error: `the category ${i} does not exist`});
               }
           }
+          let lastCategory = "";
+          const N = await categories.count();
+          const T = types.length;
+          if(N === T){
+            lastCategory = await categories.findOne(); //the lastFunction is found only whene N === T 
+          }
 
           for (const i of types){
-              const remained_categories = await categories.count();
-              
-              if(remained_categories === 1){
-                  return res.json({error: `${i} is the last category left, it is not possible to remove it`, count: count})
-              } 
+           
+              if(i === lastCategory.type){ //if N === T and the lastCategory is supposed to be deleted, then it will be not, but all 
+                //other categories will be
+                continue;
+              }
               
               const cancelled = await categories.deleteOne({type: i});
               const a = await categories.findOne({}, {_id: 0, type: 1});

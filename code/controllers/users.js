@@ -358,18 +358,21 @@ or do not exist in the database
         }
 
         const isAdminRoute = req.url.includes("/pull");
-        const isPartOfTheGroup = req.url.includes("remove");
+        const isPartOfTheGroup = req.url.includes("/remove");
         if(isAdminRoute){
           const adminAuth = verifyAuth(req, res, {authType: "Admin"});
           if(!adminAuth.authorized){
-            return res.status(401).json({error: "unauthorised, only admins have access to this feature"})
+            return res.status(401).json({error: "unauthorized, only admins have access to this feature"})
           }
         }else if(isPartOfTheGroup){
           const emails1 = groupCurrent.members.map(a => a.email);
           const groupAuth = verifyAuth(req, res, {authType: "Group", emails: emails1})
           if(!groupAuth.authorized){
-            return res.status(401).json({error: "unauthorised, the user must be part of the group in order to access this functionality"})
+
+            return res.status(401).json({error: "unauthorized, the user must be part of the group in order to access this functionality"})
           }
+        }else{
+          return res.status(401).json({error: "unauthorized"});
         }
 
         const {emails} = req.body;
@@ -513,6 +516,9 @@ export const deleteGroup = async (req, res) => {
     const {name} = req.body;
     if(!name){
       return res.status(400).json({error: "missing parameters"})
+    }
+    if(typeof name !== "string"){
+      return res.status(400).json({error: "invalid name"});
     }
     if(name.trim() === ""){
       return res.status(400).json({error: "empty string is not a valid group"})

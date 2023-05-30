@@ -54,19 +54,28 @@ export const registerAdmin = async (req, res) => {
 }
 
 /**
- * Perform login 
-  - Request Body Content: An object having attributes `email` and `password`
-  - Response `data` Content: An object with the created accessToken and refreshToken
-  - Optional behavior:
-    - error 400 is returned if the user does not exist
-    - error 400 is returned if the supplied password does not match with the one in the database
+ * 
+- Request Parameters: None
+- Request Body Content: An object having attributes `email` and `password`
+  - Example: `{email: "mario.red@email.com", password: "securePass"}`
+- Response `data` Content: An object with the created accessToken and refreshToken
+  - Example: `res.status(200).json({data: {accessToken: accessToken, refreshToken: refreshToken}})`
+- Returns a 400 error if the request body does not contain all the necessary attributes
+- Returns a 400 error if at least one of the parameters in the request body is an empty string
+- Returns a 400 error if the email in the request body is not in a valid email format
+- Returns a 400 error if the email in the request body does not identify a user in the database
+- Returns a 400 error if the supplied password does not match with the one in the database
  */
-export const login = async (req, res) => {
-    const { email, password } = req.body
-    const cookie = req.cookies
-    const existingUser = await User.findOne({ email: email })
-    if (!existingUser) return res.status(400).json('please you need to register')
+export const login = async (req, res) => {    
     try {
+        const { email, password } = req.body ;
+        if (email.length === 0 || password.length ===0)
+        return res.status(400).json({message: " Empty string. Write correct information to login"});
+        const cookie = req.cookies ;
+        const existingUser = await User.findOne({ email: email })
+        if (!existingUser) 
+        return res.status(400).json('please you need to register')
+    
         const match = await bcrypt.compare(password, existingUser.password)
         if (!match) return res.status(400).json('wrong credentials')
         //CREATE ACCESSTOKEN

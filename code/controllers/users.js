@@ -163,6 +163,7 @@ of the group and an array for the `members` of the group
 - Returns a 401 error if called by an authenticated user who is not an admin (authType = Admin)
 
  */
+
 export const getGroups = async (req, res) => {
   try {
     // verify auth using utils function
@@ -183,6 +184,8 @@ export const getGroups = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+
 
 /**
 - Request Parameters: A string equal to the `name` of the requested group

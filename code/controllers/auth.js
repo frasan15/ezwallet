@@ -2,19 +2,28 @@ import bcrypt from 'bcryptjs';
 import { User } from '../models/User.js';
 import jwt from 'jsonwebtoken';
 import { verifyAuth } from './utils.js';
+import { isValidEmail } from './utils.js';
 
 /**
- * Register a new user in the system
-  - Request Body Content: An object having attributes `username`, `email` and `password`
-  - Response `data` Content: A message confirming successful insertion
-  - Optional behavior:
-    - error 400 is returned if there is already a user with the same username and/or email
+ * 
+- Request Parameters: None
+- Request Body Content: An object having attributes `username`, `email` and `password`
+  - Example: `{username: "Mario", email: "mario.red@email.com", password: "securePass"}`
+- Response `data` Content: A message confirming successful insertion
+  - Example: `res.status(200).json({data: {message: "User added successfully"}})`
+- Returns a 400 error if the request body does not contain all the necessary attributes
+- Returns a 400 error if at least one of the parameters in the request body is an empty string
+- Returns a 400 error if the email in the request body is not in a valid email format
+- Returns a 400 error if the username in the request body identifies an already existing user
+- Returns a 400 error if the email in the request body identifies an already existing user
  */
 export const register = async (req, res) => {
     try {
+        
         const { username, email, password } = req.body;
         const existingUser = await User.findOne({ email: req.body.email });
-        if (existingUser) return res.status(400).json({ message: "you are already registered" });
+        const existingUser1 = await User.findOne({username: req.body.username});
+        if (existingUser || existingUser1) return res.status(400).json({ message: "you are already registered" });
         const hashedPassword = await bcrypt.hash(password, 12);
         const newUser = await User.create({
             username,
@@ -28,11 +37,17 @@ export const register = async (req, res) => {
 };
 
 /**
- * Register a new user in the system with an Admin role
-  - Request Body Content: An object having attributes `username`, `email` and `password`
-  - Response `data` Content: A message confirming successful insertion
-  - Optional behavior:
-    - error 400 is returned if there is already a user with the same username and/or email
+ * 
+- Request Parameters: None
+- Request Body Content: An object having attributes `username`, `email` and `password`
+  - Example: `{username: "admin", email: "admin@email.com", password: "securePass"}`
+- Response `data` Content: A message confirming successful insertion
+  - Example: `res.status(200).json({data: {message: "User added successfully"}})`
+- Returns a 400 error if the request body does not contain all the necessary attributes
+- Returns a 400 error if at least one of the parameters in the request body is an empty string
+- Returns a 400 error if the email in the request body is not in a valid email format
+- Returns a 400 error if the username in the request body identifies an already existing user
+- Returns a 400 error if the email in the request body identifies an already existing user
  */
 export const registerAdmin = async (req, res) => {
     try {
@@ -54,7 +69,7 @@ export const registerAdmin = async (req, res) => {
 }
 
 /**
- * 
+ * Perform login 
 - Request Parameters: None
 - Request Body Content: An object having attributes `email` and `password`
   - Example: `{email: "mario.red@email.com", password: "securePass"}`
@@ -105,11 +120,12 @@ export const login = async (req, res) => {
 
 /**
  * Perform logout
-  - Auth type: Simple
-  - Request Body Content: None
-  - Response `data` Content: A message confirming successful logout
-  - Optional behavior:
-    - error 400 is returned if the user does not exist
+- Request Parameters: None
+- Request Body Content: None
+- Response `data` Content: A message confirming successful logout
+  - Example: `res.status(200).json({data: {message: "User logged out"}})`
+- Returns a 400 error if the request does not have a refresh token in the cookies
+- Returns a 400 error if the refresh token in the request's cookies does not represent a user in the database
  */
 export const logout = async (req, res) => {
     const refreshToken = req.cookies.refreshToken
@@ -121,7 +137,7 @@ export const logout = async (req, res) => {
         res.cookie("accessToken", "", { httpOnly: true, path: '/api', maxAge: 0, sameSite: 'none', secure: true })
         res.cookie('refreshToken', "", { httpOnly: true, path: '/api', maxAge: 0, sameSite: 'none', secure: true })
         const savedUser = await user.save()
-        res.status(200).json('logged out')
+        res.status(200).json({data: {message: 'User logged out'}})
     } catch (error) {
         res.status(400).json(error)
     }

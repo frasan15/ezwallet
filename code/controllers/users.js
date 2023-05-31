@@ -54,12 +54,21 @@ export const getUser = async (req, res) => {
     if (!cookie.accessToken || !cookie.refreshToken) {
       return res.status(401).json({ message: "Unauthorized" }); // unauthorized
     }
+    // check if user is admin
+    const isAdmin = true;
+
     const username = req.params.username;
+    const userParam = await User.findOne({ username: username });
     const user = await User.findOne({ refreshToken: cookie.refreshToken });
-    if (!user) return res.status(401).json({ message: "User not found" });
-    if (user.username !== username)
+    if (!user) {
+      return res.status(401).json({ message: "User not found" });
+    }
+    if (!userParam) {
+      return res.status(400).json({ message: "Username not found" });
+    }
+    if ((user.username !== userParam.username) && !isAdmin)
       return res.status(401).json({ message: "Unauthorized" });
-    res.status(200).json(user);
+    res.status(200).json({data: userParam, refreshedTokenMessage: res.locals.refreshedTokenMessage});
   } catch (error) {
     res.status(500).json(error.message);
   }
@@ -459,16 +468,19 @@ export const deleteUser = async (req, res) => {
 
   try {
     // check if user is admin
-    // check if email is in correct form
 
     const { email } = req.body;
 
-    if (email===null || email===undefined) {
+    if (email===undefined) {
       return res.status(400).json({ error: 'email is missing' });
     }
   
     if (email.trim() === '') {
       return res.status(400).json({ error: 'email cannot be empty' });
+    }
+
+    if(!isValidEmail(email)){
+      return res.status(400).json({ error: 'email is not in correct form' });
     }
 
     const deletedUser = await User.findOneAndDelete({ email: req.body.email });
@@ -485,9 +497,22 @@ export const deleteUser = async (req, res) => {
 
     const deletedTransactions = await transactions.deleteMany({ _id: { $in: idList } });
 
-    // check if user is in a group
+    const userGroup = await Group.findOne({ 'members.email': email });
+    let deletedFromGroup = null
+    if (!userGroup){
+      deletedFromGroup = false
+    }
+    else{
+      if(userGroup.members.length==1){
+        await Group.deleteOne({ _id: userGroup._id })
+      }
+      else{
+        await Group.updateOne({_id: userGroup._id}, {$pull: {members: {email: email}}});
+      }      
+      deletedFromGroup = true
+    }
 
-    return res.status(200).json({data: {deletedTransaction: deletedTransactions.deletedCount, deletedFromGroup: true}, refreshedTokenMessage: res.locals.refreshedTokenMessage})
+    return res.status(200).json({data: {deletedTransaction: deletedTransactions.deletedCount, deletedFromGroup: deletedFromGroup}, refreshedTokenMessage: res.locals.refreshedTokenMessage})
 
   } catch (error) {
     return res.status(500).json({ message: "Error" });

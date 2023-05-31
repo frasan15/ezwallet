@@ -19,11 +19,31 @@ import { isValidEmail } from './utils.js';
  */
 export const register = async (req, res) => {
     try {
-        
+
         const { username, email, password } = req.body;
+        if (username === undefined || email===undefined || password===undefined){
+            return res.status(400).json({ error: 'Missing attributes' });
+        }
+
+        if ((username.trim() === '') || (email.trim() === '') || (password.trim() === '')) {
+            return res.status(400).json({ error: 'Empty attributes' });
+        }
+
+        if (!isValidEmail(email)){
+            return res.status(400).json({ error: 'Email is not valid' });
+        }
+
         const existingUser = await User.findOne({ email: req.body.email });
         const existingUser1 = await User.findOne({username: req.body.username});
-        if (existingUser || existingUser1) return res.status(400).json({ message: "you are already registered" });
+
+        if(existingUser){
+            return res.status(400).json({ error: 'Email is already registered' });
+        }
+
+        if(existingUser1){
+            return res.status(400).json({ error: 'Username is already registered' });
+        }
+
         const hashedPassword = await bcrypt.hash(password, 12);
         const newUser = await User.create({
             username,
@@ -52,8 +72,28 @@ export const register = async (req, res) => {
 export const registerAdmin = async (req, res) => {
     try {
         const { username, email, password } = req.body
+        if (username === undefined || email===undefined || password===undefined){
+            return res.status(400).json({ error: 'Missing attributes' });
+        }
+
+        if ((username.trim() === '') || (email.trim() === '') || (password.trim() === '')) {
+            return res.status(400).json({ error: 'Empty attributes' });
+        }
+
+        if (!isValidEmail(email)){
+            return res.status(400).json({ error: 'Email is not valid' });
+        }
+
         const existingUser = await User.findOne({ email: req.body.email });
-        if (existingUser) return res.status(400).json({ message: "you are already registered" });
+        const existingUser1 = await User.findOne({username: req.body.username});
+
+        if(existingUser){
+            return res.status(400).json({ error: 'Email is already registered' });
+        }
+
+        if(existingUser1){
+            return res.status(400).json({ error: 'Username is already registered' });
+        }
         const hashedPassword = await bcrypt.hash(password, 12);
         const newUser = await User.create({
             username,

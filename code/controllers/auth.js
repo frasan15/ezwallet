@@ -121,12 +121,16 @@ export const registerAdmin = async (req, res) => {
 - Returns a 400 error if the email in the request body does not identify a user in the database
 - Returns a 400 error if the supplied password does not match with the one in the database
  */
-export const login = async (req, res) => {
-    const { email, password } = req.body
-    const cookie = req.cookies
-    const existingUser = await User.findOne({ email: email })
-    if (!existingUser) return res.status(400).json('please you need to register')
+export const login = async (req, res) => {    
     try {
+        const { email, password } = req.body ;
+        if (email.length === 0 || password.length ===0)
+        return res.status(400).json({message: " Empty string. Write correct information to login"});
+        const cookie = req.cookies ;
+        const existingUser = await User.findOne({ email: email })
+        if (!existingUser) 
+        return res.status(400).json('please you need to register')
+    
         const match = await bcrypt.compare(password, existingUser.password)
         if (!match) return res.status(400).json('wrong credentials')
         //CREATE ACCESSTOKEN

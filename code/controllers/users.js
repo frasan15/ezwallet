@@ -14,7 +14,6 @@ import { isValidEmail } from "./utils.js";
  */
 export const getUsers = async (req, res) => {
   try {
-
     const cookie = req.cookies;
     if (!cookie.accessToken) {
       return res.status(401).json({ message: "Unauthorized" }); // unauthorized
@@ -75,7 +74,8 @@ that lists all the `memberEmails`
   - Example: `res.status(200).json({data: {group: {name: "Family", members: [{email: "mario.red@email.com"},
    {email: "luigi.red@email.com"}]}, membersNotFound: [], alreadyInGroup: []}
     refreshedTokenMessage: res.locals.refreshedTokenMessage})`
-- If the user who calls the API does not have their email in the list of emails then their email is added to the list of members
+- If the user who calls the API does not have their email in the list of emails then their email is added to the 
+list of members
 - Returns a 400 error if the request body does not contain all the necessary attributes
 - Returns a 400 error if the group name passed in the request body is an empty string
 - Returns a 400 error if the group name passed in the request body represents an already existing group in the database
@@ -159,11 +159,10 @@ export const createGroup = async (req, res) => {
 of the group and an array for the `members` of the group
   - Example: `res.status(200).json({data: [{name: "Family", members:
    [{email: "mario.red@email.com"}, {email: "luigi.red@email.com"}]}]
-    refreshedTokenMessage: res.locals.refreshedTokenMessage})` OK
+    refreshedTokenMessage: res.locals.refreshedTokenMessage})` 
 - Returns a 401 error if called by an authenticated user who is not an admin (authType = Admin)
 
  */
-
 export const getGroups = async (req, res) => {
   try {
     // verify auth using utils function
@@ -184,8 +183,6 @@ export const getGroups = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
-
-
 
 /**
 - Request Parameters: A string equal to the `name` of the requested group
@@ -249,7 +246,6 @@ or do not exist in the database
         const group = await Group.findOne({ name: groupName });
         const userRout = req.url.includes("/add");
         const adminRout = req.url.includes("/insert");
-
         if (adminRout){
           const Admin= verifyAuth(req, res, { authType: "Admin" });
           if (!Admin){

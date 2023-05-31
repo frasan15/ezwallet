@@ -20,7 +20,12 @@ export const getUsers = async (req, res) => {
       return res.status(401).json({ message: "Unauthorized" }); // unauthorized
     }
 
-    // check if user is admin
+      // check if the authenticated user is admin
+    const isAdmin = verifyAuth(req, res, {authType:"Admin"})
+
+    if(!isAdmin.authorized){
+      return res.status(401).json({ message: isAdmin.cause }); // unauthorized
+    }
 
     const users = await User.find({}, 'username email role -_id')
     .then(users => {
@@ -54,20 +59,27 @@ export const getUser = async (req, res) => {
     if (!cookie.accessToken || !cookie.refreshToken) {
       return res.status(401).json({ message: "Unauthorized" }); // unauthorized
     }
-    // check if user is admin
-    const isAdmin = true;
 
     const username = req.params.username;
-    const userParam = await User.findOne({ username: username });
-    const user = await User.findOne({ refreshToken: cookie.refreshToken });
+    const userParam = await User.findOne({ username: username }, 'username email role -_id');
+    const user = await User.findOne({ refreshToken: cookie.refreshToken }, 'username email role -_id');
     if (!user) {
       return res.status(401).json({ message: "User not found" });
     }
     if (!userParam) {
       return res.status(400).json({ message: "Username not found" });
     }
-    if ((user.username !== userParam.username) && !isAdmin)
+
+
+    // check if the authenticated user is admin
+    const isAdmin = verifyAuth(req, res, {authType:"Admin"})
+
+    // check if the authenticated user who is the same user as the one in the route parameter
+    const isSameUser = verifyAuth(req, res, {authType: "User", username:req.params.username})
+
+    if (!isSameUser.authorized && !isAdmin.authorized)
       return res.status(401).json({ message: "Unauthorized" });
+
     res.status(200).json({data: userParam, refreshedTokenMessage: res.locals.refreshedTokenMessage});
   } catch (error) {
     res.status(500).json(error.message);
@@ -467,26 +479,45 @@ or do not exist in the database
 export const deleteUser = async (req, res) => {
 
   try {
-    // check if user is admin
+
+    const cookie = req.cookies;
+    if (!cookie.accessToken || !cookie.refreshToken) {
+      return res.status(401).json({ message: "Unauthorized" }); // unauthorized
+    }
+
+    // check if authenticated user is admin
+    const isAdmin = verifyAuth(req, res, {authType:"Admin"})
+    if(!isAdmin.authorized){
+      return res.status(401).json({ message: isAdmin.cause }); // unauthorized
+    }
 
     const { email } = req.body;
 
+    // check if the request body does contain all the necessary attributes
     if (email===undefined) {
       return res.status(400).json({ error: 'email is missing' });
     }
   
+    // check if the email passed in the request body is an empty string
     if (email.trim() === '') {
       return res.status(400).json({ error: 'email cannot be empty' });
     }
 
+    // check if the email passed in the request body is in correct email format
     if(!isValidEmail(email)){
       return res.status(400).json({ error: 'email is not in correct form' });
     }
 
     const deletedUser = await User.findOneAndDelete({ email: req.body.email });
 
+    // check if the email passed in the request body does represent a user in the database
     if(!deletedUser){
       return res.status(400).json({message: "email does not represent a user in the database"});
+    }
+
+    // check if the user to delete is an Admin
+    if(deletedUser.role == "Admin"){
+      return res.status(400).json({message: "user to delete cannot be admin"});
     }
 
     const userTransactions = await transactions.find({

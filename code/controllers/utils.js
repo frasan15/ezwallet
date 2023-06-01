@@ -177,10 +177,10 @@ export const verifyAuth = (req, res, info) => {
     const { min, max } = req.query;
 
     const handleNumericValue = (value) => {
-      if (typeof value !== 'number' || isNaN(value)) {
+      if (isNaN(parseFloat(value))) {
         throw new Error(`Invalid value`);
       }
-      const numericValue = Number(value);
+      const numericValue = parseFloat(value);
       return numericValue;
     };
 

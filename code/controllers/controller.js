@@ -21,19 +21,19 @@ import mongoose from "mongoose";
  */
 export const createCategory = async (req, res) => {
     try {
-        const Admin= verifyAuth(req, res, { authType: "Admin" });
-        if (!Admin) 
-        return res.status(401).json({ message: "Unauthorized" }) // unauthorized
+        const Admin = verifyAuth(req, res, { authType: "Admin" });
+        if (!Admin.authorized) 
+          return res.status(401).json({error: "Unauthorized" }) // unauthorized
         const { type, color } = req.body;
         if (!type || !color)
-        return res.status(400).json({message: "Missing or wrong parameters"});
-        if (type.length==0 || color.length==0)
-        return res.status(400).json({message: "empty string not acceptable"});
+          return res.status(400).json({error: "Missing or wrong parameters"});
+        if (type.trim() === "" || color.trim() === "")
+          return res.status(400).json({error: "empty string not acceptable"});
         const category = await categories.findOne({type: type});
         if (category) 
-        return res.status(400).json({message: "category already exist"})
+          return res.status(400).json({error: "category already exist"})
         const new_categories =await new categories({ type: type, color:color }).save();
-        return res.status(200).json({data :{new_categories} , refreshedTokenMessage: res.locals.refreshedTokenMessage});
+        return res.status(200).json({data :{type: new_categories.type, color: new_categories.color} , refreshedTokenMessage: res.locals.refreshedTokenMessage});
         }
         catch (error) {
         res.status(400).json({ error: error.message })

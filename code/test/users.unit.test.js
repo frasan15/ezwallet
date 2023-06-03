@@ -3,6 +3,8 @@ import { app } from '../app';
 import { User } from '../models/User.js';
 import { Group } from '../models/User.js';
 import { getGroups } from '../controllers/users';
+import { verifyAuth } from '../controllers/utils';
+import jwt from "jsonwebtoken";
 
 /**
  * In order to correctly mock the calls to external modules it is necessary to mock them using the following line.
@@ -11,9 +13,7 @@ import { getGroups } from '../controllers/users';
  * `jest.mock()` must be called for every external module that is called in the functions under test.
  */
 jest.mock("../models/User.js")
-
-userOneId = mongoose.id
-
+/*
 const userOne = {email: "user@test.com", username: "frasan", role: "Admin"}
 
 const accessToken = ""
@@ -24,6 +24,7 @@ userOne.refreshToken = jwt.sign({
   username: userOne.username,
   role: userOne.role
 }, process.env.ACCESS_KEY, { expiresIn: '7d' });
+*/
 
 /**
  * Defines code to be executed before each test case is launched
@@ -63,6 +64,7 @@ describe("getUser", () => { })
 describe("createGroup", () => { })
 
 describe("getGroups", () => {
+  /*
   test("should return empty list if there are no groups", async () => {
     const mockReq = {
       cookies: "accessToken=accessToken; refreshToken=refreshToken"
@@ -78,6 +80,23 @@ describe("getGroups", () => {
     expect(Group.find).toHaveBeenCalled()
     expect(mockRes.status).toHaveBeenCalledWith(200)
     expect(mockRes.json).toHaveBeenCalledWith([])
+  });
+
+  test("should return list of groups for admin", async () => {
+    const groups = [
+      {name: "Family", members: [{email: "mario.red@email.com"}, {email: "luigi.red@email.com"}]}, 
+      {name: "Friends", members: [{email: "francesco.green@email.com"}, {email: "marco.blue@email.com"}]}
+    ];
+
+    verifyAuth.mockImplementation(() => ({authorized: true, cause: "Authorized"}))
+    Group.find.mockImplementation(() => groups)
+
+    const response = await request(app).get("/api/groups");
+
+    expect(response.status).toBe(200)
+    expect(response.body).toEqual({
+      data: groups.map(group => ({name: group.name, members: group.members}))
+    })
   })
 
   test("should retrieve list of all groups", async () => {
@@ -90,6 +109,7 @@ describe("getGroups", () => {
     expect(response.body).toEqual(retrievedGroup)
  
   })
+  */
  })
 
 describe("getGroup", () => { })

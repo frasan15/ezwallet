@@ -1,6 +1,8 @@
 import request from 'supertest';
 import { app } from '../app';
 import { User } from '../models/User.js';
+import { Group } from '../models/User.js';
+import { getGroups } from '../controllers/users';
 
 /**
  * In order to correctly mock the calls to external modules it is necessary to mock them using the following line.
@@ -10,6 +12,19 @@ import { User } from '../models/User.js';
  */
 jest.mock("../models/User.js")
 
+userOneId = mongoose.id
+
+const userOne = {email: "user@test.com", username: "frasan", role: "Admin"}
+
+const accessToken = ""
+const refreshToken = ""
+userOne.refreshToken = jwt.sign({
+  email: userOne.email,
+  id: userOneId.toString(),
+  username: userOne.username,
+  role: userOne.role
+}, process.env.ACCESS_KEY, { expiresIn: '7d' });
+
 /**
  * Defines code to be executed before each test case is launched
  * In this case the mock implementation of `User.find()` is cleared, allowing the definition of a new mock implementation.
@@ -17,6 +32,7 @@ jest.mock("../models/User.js")
  */
 beforeEach(() => {
   User.find.mockClear()
+  Group.find.mockClear()
   //additional `mockClear()` must be placed here
 });
 
@@ -46,7 +62,35 @@ describe("getUser", () => { })
 
 describe("createGroup", () => { })
 
-describe("getGroups", () => { })
+describe("getGroups", () => {
+  test("should return empty list if there are no groups", async () => {
+    const mockReq = {
+      cookies: "accessToken=accessToken; refreshToken=refreshToken"
+    }
+
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn()
+    }
+
+    jest.spyOn(Group, "find").mockResolvedValue(() => [])
+    await getGroups(mockReq, mockRes)
+    expect(Group.find).toHaveBeenCalled()
+    expect(mockRes.status).toHaveBeenCalledWith(200)
+    expect(mockRes.json).toHaveBeenCalledWith([])
+  })
+
+  test("should retrieve list of all groups", async () => {
+    const retrievedGroup = [{name: "Family", members: [{email: "mario.red@email.com"}, {email: "luigi.red@email.com"}]}, 
+                            {name: "Friends", members: [{email: "francesco.green@email.com"}, {email: "marco.blue@email.com"}]}]
+    jest.spyOn(Group, "find").mockImplementation(() => retrievedGroup)
+    const response = await request(app).get("/api/groups")
+
+    expect(response.status).toBe(200)
+    expect(response.body).toEqual(retrievedGroup)
+ 
+  })
+ })
 
 describe("getGroup", () => { })
 

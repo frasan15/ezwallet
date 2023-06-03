@@ -52,43 +52,66 @@ export const createCategory = (req, res) => {
 - Returns a 400 error if the type of category passed in the request body as the new type represents an already existing category in the database
 - Returns a 401 error if called by an authenticated user who is not an admin (authType = Admin)
  */
-    export const updateCategory = async (req, res) => {
-      try {
-          const cookie = req.cookies
-          const adminAuth = verifyAuth(req, res, {authType: "Admin"});
-          if(!adminAuth.authorized){
-            return res.status(401).json({error: "unauthorised, only admins have access this feature"})
-          }
+export const updateCategory = async (req, res) => {
+  try {
+    const cookie = req.cookies;
+    const adminAuth = verifyAuth(req, res, { authType: "Admin" });
+    if (!adminAuth.authorized) {
+      return res
+        .status(401)
+        .json({ error: "unauthorised, only admins have access this feature" });
+    }
 
-          let {type, color} = req.body;
-          let type1 = typeof type;
-          let color1 = typeof color;
+    let { type, color } = req.body;
+    let type1 = typeof type;
+    let color1 = typeof color;
 
-          if (type1 !== "string" || color1 !== "string" || !type || !color || type.trim() === "" || color.trim() === ""){
-              return res.status(400).json({error: "the parameters have invalid values"})
-          }
+    if (
+      type1 !== "string" ||
+      color1 !== "string" ||
+      !type ||
+      !color ||
+      type.trim() === "" ||
+      color.trim() === ""
+    ) {
+      return res
+        .status(400)
+        .json({ error: "the parameters have invalid values" });
+    }
 
-          const typeAlreadyPresent = await categories.findOne({type: type});
-          if(typeAlreadyPresent){
-            return res.status(400).json({error: "the type of category passed in the request body as the new type represents an already existing category in the database"});
-          }
+    const typeAlreadyPresent = await categories.findOne({ type: type });
+    if (typeAlreadyPresent) {
+      return res.status(400).json({
+        error:
+          "the type of category passed in the request body as the new type represents an already existing category in the database",
+      });
+    }
 
-          const modified = await categories.updateOne({type: req.params.type}, {$set: {type: type, color: color}});
+    const modified = await categories.updateOne(
+      { type: req.params.type },
+      { $set: { type: type, color: color } }
+    );
 
-          if(modified.modifiedCount === 0){
-              return res.status(400).json({error: "the specified category does not exist"});
-          }
+    if (modified.modifiedCount === 0) {
+      return res
+        .status(400)
+        .json({ error: "the specified category does not exist" });
+    }
 
-          const data = await transactions.updateMany({type: req.params.type}, {$set: {type: type}});
-          const result = {data: {count: data.modifiedCount, message: "succesfull updating"}, refreshedTokenMessage: res.locals.refreshedTokenMessage};
-  
-          return res.json(result);
-  
-      } catch (error) {
-          res.status(500).json({ error: error.message })
-      }
+    const data = await transactions.updateMany(
+      { type: req.params.type },
+      { $set: { type: type } }
+    );
+    const result = {
+      data: { count: data.modifiedCount, message: "succesfull updating" },
+      refreshedTokenMessage: res.locals.refreshedTokenMessage,
+    };
+
+    return res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
-
+};
 
 /**
  * Delete a category
@@ -107,62 +130,75 @@ export const createCategory = (req, res) => {
 - Returns a 400 error if at least one of the types in the array does not represent a category in the database
 - Returns a 401 error if called by an authenticated user who is not an admin (authType = Admin)
  */
-    export const deleteCategory = async (req, res) => {
-      try {
-          const adminAuth = verifyAuth(req, res, {authType: "Admin"});
-          if(!adminAuth.authorized){
-            return res.status(401).json({error: "unauthorised, only admins have access to this feature"})
-          }
+export const deleteCategory = async (req, res) => {
+  try {
+    const adminAuth = verifyAuth(req, res, { authType: "Admin" });
+    if (!adminAuth.authorized) {
+      return res.status(401).json({
+        error: "unauthorised, only admins have access to this feature",
+      });
+    }
 
-          let count = 0;
-          const {types} = req.body;
+    let count = 0;
+    const { types } = req.body;
 
-          if(!types){
-            return res.status(400).json({error: "missing parameters"});
-          }
+    if (!types) {
+      return res.status(400).json({ error: "missing parameters" });
+    }
 
-          if(await categories.count() === 1){
-            return res.status(400).json({error: "there is only one category left, it is not possible to remove it"});
-          }
- 
-          for(const i of types){
-            if(i.trim() === ""){
-              return res.status(400).json({error: "empty string is not a valid type"});
-            }
-              const check1 = await categories.findOne({type: i});
-              if(check1 === null){
-                  return res.status(400).json({error: `the category ${i} does not exist`});
-              }
-          }
-          let lastCategory = "";
-          const N = await categories.count();
-          const T = types.length;
-          if(N === T){
-            lastCategory = await categories.findOne(); //the lastFunction is found only whene N === T 
-          }
+    if ((await categories.count()) === 1) {
+      return res.status(400).json({
+        error:
+          "there is only one category left, it is not possible to remove it",
+      });
+    }
 
-          for (const i of types){
-           
-              if(i === lastCategory.type){ //if N === T and the lastCategory is supposed to be deleted, then it will be not, but all 
-                //other categories will be
-                continue;
-              }
-              
-              const cancelled = await categories.deleteOne({type: i});
-              const a = await categories.findOne({}, {_id: 0, type: 1});
-              
-              const transaction_changed = await transactions.updateMany({type: i }, {$set: {type: a.type}})
-              count += transaction_changed.modifiedCount;
-          }
-
-          const result = {data: {message: "categories correctly deleted", count: count}, refreshedTokenMessage: res.locals.refreshedTokenMessage}
-          return res.json(result);
-  
-      } catch (error) {
-          res.status(500).json({ error: error.message })
+    for (const i of types) {
+      if (i.trim() === "") {
+        return res
+          .status(400)
+          .json({ error: "empty string is not a valid type" });
       }
-  }
+      const check1 = await categories.findOne({ type: i });
+      if (check1 === null) {
+        return res
+          .status(400)
+          .json({ error: `the category ${i} does not exist` });
+      }
+    }
+    let lastCategory = "";
+    const N = await categories.count();
+    const T = types.length;
+    if (N === T) {
+      lastCategory = await categories.findOne(); //the lastFunction is found only whene N === T
+    }
 
+    for (const i of types) {
+      if (i === lastCategory.type) {
+        //if N === T and the lastCategory is supposed to be deleted, then it will be not, but all
+        //other categories will be
+        continue;
+      }
+
+      const cancelled = await categories.deleteOne({ type: i });
+      const a = await categories.findOne({}, { _id: 0, type: 1 });
+
+      const transaction_changed = await transactions.updateMany(
+        { type: i },
+        { $set: { type: a.type } }
+      );
+      count += transaction_changed.modifiedCount;
+    }
+
+    const result = {
+      data: { message: "categories correctly deleted", count: count },
+      refreshedTokenMessage: res.locals.refreshedTokenMessage,
+    };
+    return res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
 
 /**
  * Return all the categories
@@ -587,6 +623,7 @@ export const getTransactionsByGroupByCategory = async (req, res) => {
 - Returns a 400 error if the request body does not contain all the necessary attributes
 - Returns a 400 error if the username passed as a route parameter does not represent a user in the database
 - Returns a 400 error if the `_id` in the request body does not represent a transaction in the database
+- Returns a 400 error if the transaction to delete has not been made by the user who calls the function
 - Returns a 401 error if called by an authenticated user who is not the same user as the one in the route (authType = User)
  */
 export const deleteTransaction = async (req, res) => {
@@ -594,7 +631,7 @@ export const deleteTransaction = async (req, res) => {
     const shouldReturn = await searchUserAndCheckAdmin(req, res, false);
     if (shouldReturn) return;
     await transactions.deleteOne({ _id: req.body._id });
-    return res.json({message: "deleted"});
+    return res.json({ message: "deleted" });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }

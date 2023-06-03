@@ -36,7 +36,7 @@ export const createCategory = async (req, res) => {
         return res.status(200).json({data :{type: new_categories.type, color: new_categories.color} , refreshedTokenMessage: res.locals.refreshedTokenMessage});
         }
         catch (error) {
-        res.status(400).json({ error: error.message })
+        res.status(500).json({ error: error.message })
     }
 };
 
@@ -214,15 +214,15 @@ export const deleteCategory = async (req, res) => {
  */
 export const getCategories = async (req, res) => {
     try {
-        const user= verifyAuth(req, res, { authType: "Simple" })
+        const user = verifyAuth(req, res, { authType: "Simple" })
         if (!user || !user.authorized)
         return res.status(401).json({message: "Unauthorized"})
         let data = await categories.find({})
         let filter = data.map(v => Object.assign({}, { type: v.type, color: v.color }))
-        return res.status(200).json({data: {filter},refreshedTokenMessage: res.locals.refreshedTokenMessage })
+        return res.status(200).json({ data: filter, refreshedTokenMessage: res.locals.refreshedTokenMessage })
     } 
     catch (error) {
-        res.status(400).json({ error: error.message })
+        res.status(500).json({ error: error.message })
     }
 };
 
@@ -288,7 +288,7 @@ export const createTransaction = async (req, res) => {
         throw err;
       });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 };
 
@@ -344,7 +344,7 @@ export const getAllTransactions = async (req, res) => {
         throw error;
       });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 };
 
@@ -443,7 +443,7 @@ export const getTransactionsByUser = async (req, res) => {
     }
     commonTransactionsByUser(req, res, filter);
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 };
 
@@ -479,7 +479,7 @@ export const getTransactionsByUserByCategory = async (req, res) => {
     if (shouldReturn) return;
     commonTransactionsByUser(req, res);
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 };
 
@@ -579,7 +579,7 @@ export const getTransactionsByGroup = async (req, res) => {
     if (shouldReturn) return;
     commonTransactionsByGroup(req, res, isAdminRoute);
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 };
 
@@ -614,7 +614,7 @@ export const getTransactionsByGroupByCategory = async (req, res) => {
     if (shouldReturn) return;
     commonTransactionsByGroup(req, res, isAdminRoute);
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 };
 
@@ -647,7 +647,7 @@ export const deleteTransaction = async (req, res) => {
       refreshedTokenMessage: res.locals.refreshedTokenMessage,
     });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 };
 
@@ -697,6 +697,6 @@ export const deleteTransactions = async (req, res) => {
       refreshedTokenMessage: res.locals.refreshedTokenMessage,
     });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 };

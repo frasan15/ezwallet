@@ -2,7 +2,7 @@ import request from 'supertest';
 import { app } from '../app';
 import { categories, transactions } from '../models/model';
 import { verifyAuth } from '../controllers/utils';
-import { createCategory } from '../controllers/controller';
+import { createCategory, getCategories } from '../controllers/controller';
 
 jest.mock("bcryptjs")
 jest.mock("jsonwebtoken")
@@ -45,16 +45,13 @@ describe("createCategory", () => {
         }
 
         verifyAuth.mockImplementation(() => {
-            return {authorized: "true", cause: "Authorized"}
+            return {authorized: true, cause: "Authorized"}
         })
 
-        //categories.findOne.mockResolvedValueOnce(undefined)//null because the category does not yet exist
         categories.findOne = jest.fn().mockReturnValue(null)
 
         const new_value = {type: mockReq.body.type, color: mockReq.body.color}
         jest.spyOn(categories.prototype, "save").mockResolvedValue(new_value)
-
-        //const new_categories = await new categories({ type: mockReq.type, color: mockReq.color }).save();
 
         await createCategory(mockReq, mockRes)
 
@@ -82,7 +79,7 @@ describe("createCategory", () => {
         }
 
         verifyAuth.mockImplementation(() => {
-            return {authorized: "true", cause: "Authorized"}
+            return {authorized: true, cause: "Authorized"}
         })
 
         //const new_categories = await new categories({ type: mockReq.type, color: mockReq.color }).save();
@@ -113,7 +110,7 @@ describe("createCategory", () => {
         }
 
         verifyAuth.mockImplementation(() => {
-            return {authorized: "true", cause: "Authorized"}
+            return {authorized: true, cause: "Authorized"}
         })
 
         await createCategory(mockReq, mockRes)
@@ -142,7 +139,7 @@ describe("createCategory", () => {
         }
 
         verifyAuth.mockImplementation(() => {
-            return {authorized: "true", cause: "Authorized"}
+            return {authorized: true, cause: "Authorized"}
         })
 
         //categories.findOne.mockResolvedValueOnce(undefined)//null because the category does not yet exist
@@ -162,8 +159,8 @@ describe("createCategory", () => {
     })
 
     test("Returns a 401 error if called by an authenticated user who is not an admin (authType = Admin)", async () => {
-        verifyAuth.mockReturnValue(() => {
-            return {authorized: "false", cause: "function reserved for admins only"}
+        verifyAuth.mockImplementation(() => {
+            return {authorized: false, cause: "function reserved for admins only"}
         })
 
         const mockReq = {
@@ -204,8 +201,58 @@ describe("deleteCategory", () => {
 })
 
 describe("getCategories", () => { 
-    test('Dummy test, change it', () => {
-        expect(true).toBe(true);
+    test('getting of categories successfully completed', async () => {
+        const mockReq = {
+            body: {},
+            cookies: {accessToken: "bbbi", refreshToken: "bbjbjkb"},
+            url: "/api/categories"
+        }
+
+        const mockRes = {
+            status: jest.fn().mockReturnThis(),
+            json: jest.fn(),
+            locals: {
+                refreshTokenMessage: ""
+            }
+        }
+
+        verifyAuth.mockImplementation(() => {
+            return {authorized: true, cause: "Authorized"}
+        })
+
+        const retrievedCategories = [{ type: 'test1', color: 'color1' }, { type: 'test2', color: 'color2' }]
+        jest.spyOn(categories, "find").mockImplementation(() => retrievedCategories)
+
+        await getCategories(mockReq, mockRes)
+
+        expect(mockRes.status).toHaveBeenCalledWith(200)
+        expect(mockRes.json).toHaveBeenCalledWith(
+            {data: expect.any(Array) , refreshedTokenMessage: undefined})
+
+    });
+
+    test('Returns a 401 error if called by a user who is not authenticated (authType = Simple)', async () => {
+        verifyAuth.mockImplementation(() => {
+            return {authorized: false, cause: "Unauthorized"}
+        })
+
+        const mockReq = {
+            body: {},
+            cookies: {accessToken: "bbbi", refreshToken: "bbjbjkb"},
+            url: "/api/categories"
+        }
+
+        const mockRes = {
+            status: jest.fn().mockReturnThis(),
+            json: jest.fn(),
+            locals: {
+                refreshTokenMessage: ""
+            }
+        }
+
+        await getCategories(mockReq, mockRes)
+        expect(mockRes.status).toHaveBeenCalledWith(401)
+
     });
 })
 

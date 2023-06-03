@@ -229,29 +229,27 @@ export const handleAmountFilterParams = (req) => {
 
   const { min, max } = req.query;
 
-  const handleNumericValue = (value) => {
-    if (typeof value !== "number" || isNaN(value)) {
-      throw new Error(`Invalid value`);
-    }
-    const numericValue = Number(value);
-    return numericValue;
-  };
-
-  if (min && max) {
-    filter.amount = {
-      $gte: handleNumericValue(min),
-      $lte: handleNumericValue(max),
+    const handleNumericValue = (value) => {
+      if (isNaN(parseFloat(value))) {
+        throw new Error(`Invalid value`);
+      }
+      const numericValue = parseFloat(value);
+      return numericValue;
     };
-  } else if (min) {
-    filter.amount = { $gte: handleNumericValue(min) };
-  } else if (max) {
-    filter.amount = { $lte: handleNumericValue(max) };
-  }
 
-  return filter;
-};
-
-export const isValidEmail = (email) => {
-  const emailformat = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailformat.test(email);
-};
+    if (min && max) {
+      filter.amount = { $gte: handleNumericValue(min), $lte: handleNumericValue(max) };
+    } else if (min) {
+      filter.amount = { $gte: handleNumericValue(min) };
+    } else if (max) {
+      filter.amount = { $lte: handleNumericValue(max) };
+    }
+  
+    return filter;
+  };
+  
+  export const isValidEmail = (email) => {
+    const emailformat = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailformat.test(email);
+  };
+  

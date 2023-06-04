@@ -16,14 +16,14 @@ export const getUsers = async (req, res) => {
   try {
     const cookie = req.cookies;
     if (!cookie.accessToken) {
-      return res.status(401).json({ message: "Unauthorized" }); // unauthorized
+      return res.status(401).json({ error: "Unauthorized" }); // unauthorized
     }
 
     // check if the authenticated user is admin
     const isAdmin = verifyAuth(req, res, { authType: "Admin" });
 
-    if (!isAdmin.authorized) {
-      return res.status(401).json({ message: isAdmin.cause }); // unauthorized
+    if(!isAdmin.authorized){
+      return res.status(401).json({ error: isAdmin.cause }); // unauthorized
     }
 
     const users = await User.find({}, "username email role -_id").then(
@@ -63,7 +63,7 @@ export const getUser = async (req, res) => {
   try {
     const cookie = req.cookies;
     if (!cookie.accessToken || !cookie.refreshToken) {
-      return res.status(401).json({ message: "Unauthorized" }); // unauthorized
+      return res.status(401).json({ error: "Unauthorized" }); // unauthorized
     }
 
     const username = req.params.username;
@@ -76,10 +76,10 @@ export const getUser = async (req, res) => {
       "username email role -_id"
     );
     if (!user) {
-      return res.status(401).json({ message: "User not found" });
+      return res.status(401).json({ error: "User not found" });
     }
     if (!userParam) {
-      return res.status(400).json({ message: "Username not found" });
+      return res.status(400).json({ error: "Username not found" });
     }
 
     // check if the authenticated user is admin
@@ -92,7 +92,7 @@ export const getUser = async (req, res) => {
     });
 
     if (!isSameUser.authorized && !isAdmin.authorized)
-      return res.status(401).json({ message: "Unauthorized" });
+      return res.status(401).json({ error: "Unauthorized" });
 
     res
       .status(200)
@@ -535,7 +535,7 @@ export const deleteUser = async (req, res) => {
   try {
     const cookie = req.cookies;
     if (!cookie.accessToken || !cookie.refreshToken) {
-      return res.status(401).json({ message: "Unauthorized" }); // unauthorized
+      return res.status(401).json({ error: "Unauthorized" }); // unauthorized
     }
 
     // check if authenticated user is admin
@@ -564,17 +564,13 @@ export const deleteUser = async (req, res) => {
     const deletedUser = await User.findOneAndDelete({ email: req.body.email });
 
     // check if the email passed in the request body does represent a user in the database
-    if (!deletedUser) {
-      return res
-        .status(400)
-        .json({ message: "email does not represent a user in the database" });
+    if(!deletedUser){
+      return res.status(400).json({error: "email does not represent a user in the database"});
     }
 
     // check if the user to delete is an Admin
-    if (deletedUser.role == "Admin") {
-      return res
-        .status(400)
-        .json({ message: "user to delete cannot be admin" });
+    if(deletedUser.role == "Admin"){
+      return res.status(400).json({error: "user to delete cannot be admin"});
     }
 
     const userTransactions = await transactions.find({
@@ -613,7 +609,7 @@ export const deleteUser = async (req, res) => {
         refreshedTokenMessage: res.locals.refreshedTokenMessage,
       });
   } catch (error) {
-    return res.status(500).json({ message: "Error" });
+    return res.status(500).json(error.message);
   }
 };
 

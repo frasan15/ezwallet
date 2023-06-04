@@ -2,7 +2,7 @@ import request from 'supertest';
 import { app } from '../app';
 import { categories, transactions } from '../models/model';
 import { verifyAuth } from '../controllers/utils';
-import { createCategory, getCategories } from '../controllers/controller';
+import { createCategory, deleteCategory, getCategories } from '../controllers/controller';
 
 jest.mock("bcryptjs")
 jest.mock("jsonwebtoken")
@@ -11,11 +11,13 @@ jest.mock('../models/model.js');
 
 
 beforeEach(() => {
+  categories.count.mockClear();
   categories.find.mockClear();
   categories.prototype.save.mockClear();
   transactions.find.mockClear();
   transactions.deleteOne.mockClear();
   transactions.aggregate.mockClear();
+  transactions.updateMany.mockClear();
   transactions.prototype.save.mockClear();
   jest.clearAllMocks();
 });

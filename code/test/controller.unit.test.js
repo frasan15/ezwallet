@@ -195,10 +195,195 @@ describe("updateCategory", () => {
 })
 
 describe("deleteCategory", () => { 
-    test('Dummy test, change it', () => {
-        expect(true).toBe(true);
+    test("Category Deleted successfully" , async()=>{
+        const req = {
+            body : {
+                types : ["student"]
+            },
+            cookies: {accessToken: "aaaaa", refreshToken: "bbbbb"},
+            url: "/api/categories"
+        }
+        const res = {
+            status: jest.fn().mockReturnThis(),
+            json: jest.fn(),
+            locals: {
+                refreshTokenMessage: ""
+            }
+        }
+
+        verifyAuth.mockImplementation(() => {
+            return {authorized: true, cause: "Authorized"}
+        })
+
+        categories.count.mockResolvedValueOnce(3)
+        categories.findOne.mockResolvedValueOnce({ type: "student" })
+        categories.deleteOne.mockResolvedValueOnce({ deletedCount: 1 })
+        categories.findOne.mockResolvedValueOnce({ type: "student" })
+        transactions.updateMany.mockResolvedValueOnce({ modifiedCount: 1 })
+
+        await deleteCategory(req,res)
+        expect(res.json).toHaveBeenCalledWith({data: { message: "categories correctly deleted", count: 1 },
+        refreshedTokenMessage: undefined,
+          });
+  });
+    test("Should return 401 Error if user is Unauthorized" , async() =>{
+        verifyAuth.mockImplementation(() => {
+            return {authorized: false, cause: "Unauthorized"}
+        })
+        const req = {
+            body: {
+                
+            },
+            cookies: {accessToken: "aaaa", refreshToken: "bbbbb"},
+            url: "/api/categories"
+        }
+
+        const res = {
+            status: jest.fn().mockReturnThis(),
+            json: jest.fn(),
+            locals: {
+                refreshTokenMessage: ""
+            }
+        }
+        await deleteCategory(req,res)
+        expect(res.status).toHaveBeenCalledWith(401)
+
     });
-})
+
+
+    test("Should return 400 Error if only one category is left", async () => {
+        const req = {
+            body : {
+                type : ["university"]
+            },
+            cookies: {accessToken: "aaaaa", refreshToken: "bbbbb"},
+            url: "/api/categories"
+        }
+        const res = {
+            status: jest.fn().mockReturnThis(),
+            json: jest.fn(),
+            locals: {
+                refreshTokenMessage: ""
+            }
+        }
+
+        verifyAuth.mockImplementation(() => {
+            return {authorized: true, cause: "Authorized"}
+        })
+        const mocCategories = {
+            type :["food"]
+        }
+            
+        categories.count.mockResolvedValueOnce(mocCategories)
+        await deleteCategory(req,res)
+        expect(res.status).toHaveBeenLastCalledWith(400)
+        expect(res.json).toHaveBeenCalledWith( {error: expect.any(String)})
+    });
+    test("Should return 400 Error if Request body is Empty", async() =>{ 
+        const req = {
+            body: {
+                type: [" "],
+
+            },
+            cookies: {accessToken: "aaaaa", refreshToken: "bbbbb"},
+            url: "/api/categories"
+        }
+
+        const res = {
+            status: jest.fn().mockReturnThis(),
+            json: jest.fn(),
+            locals: {
+                refreshTokenMessage: ""
+            }
+        }
+        verifyAuth.mockImplementation(() => {
+            return {authorized: true, cause: "Authorized"}
+        })
+        await deleteCategory(req,res)
+        expect(res.status).toHaveBeenCalledWith(400)
+        expect(res.json).toHaveBeenCalledWith( {error: expect.any(String)})
+        });
+        test("Should return 400 if the category is not exist in DataBase", async()=> {
+            const req = {
+                body : {
+                    types : ["university"]
+                },
+                cookies: {accessToken: "aaaaa", refreshToken: "bbbbb"},
+                url: "/api/categories"
+            }
+            const res = {
+                status: jest.fn().mockReturnThis(),
+                json: jest.fn(),
+                locals: {
+                    refreshTokenMessage: ""
+                }
+            }
+            verifyAuth.mockImplementation(() => {
+                return {authorized: true, cause: "Authorized"}
+            })
+            categories.findOne.mockResolvedValue(null)
+            await deleteCategory(req,res)
+            expect(res.status).toHaveBeenCalledWith(400)
+            expect(res.json).toHaveBeenCalledWith( {error: expect.any(String)})
+
+        });
+        test("Should return 400 error if the request body does not contain all the necessary attributes" ,
+         async()=>{
+            const req = {
+                body : {
+                    types : [" "]
+                },
+                cookies: {accessToken: "aaaaa", refreshToken: "bbbbb"},
+                url: "/api/categories"
+            }
+            const res = {
+                status: jest.fn().mockReturnThis(),
+                json: jest.fn(),
+                locals: {
+                    refreshTokenMessage: ""
+                }
+            }
+            verifyAuth.mockImplementation(() => {
+                return {authorized: true, cause: "Authorized"}
+            })
+            await deleteCategory(req,res)
+            
+            expect(res.status).toHaveBeenCalledWith(400)
+            expect(res.json).toHaveBeenCalledWith( {error: expect.any(String)})
+        });
+        test("Should retrieve last category if N equals T", async () => {
+            const req = {
+              body: {
+                types: ["food", "student"],
+              },
+              cookies: { accessToken: "aaaaa", refreshToken: "bbbbb" },
+              url: "/api/categories",
+            };
+            const res = {
+              status: jest.fn().mockReturnThis(),
+              json: jest.fn(),
+              locals: {
+                refreshTokenMessage: "",
+              },
+            };
+          
+            verifyAuth.mockImplementation(() => {
+              return { authorized: true, cause: "Authorized" };
+            });
+          
+            categories.count.mockResolvedValueOnce(2); // Assuming there are 2 categories in the database
+            categories.findOne.mockResolvedValueOnce(null); // Return null to simulate no last category found
+          
+            await deleteCategory(req, res);
+          
+            expect(categories.findOne).toHaveBeenCalled(); // Assert that findOne is called
+            // Add more assertions as needed based on the behavior you expect after retrieving the last category
+          });
+          
+
+        
+    })
+
 
 describe("getCategories", () => { 
     test('getting of categories successfully completed', async () => {

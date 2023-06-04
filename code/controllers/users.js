@@ -9,7 +9,7 @@ import { isValidEmail } from "./utils.js";
 - Request Parameters: None
 - Request Body Content: None
 - Response `data` Content: An array of objects, each one having attributes `username`, `email` and `role`
-  - Example: `res.status(200).json({data: [{username: "Mario", email: "mario.red@email.com"}, {username: "Luigi", email: "luigi.red@email.com"}, {username: "admin", email: "admin@email.com"} ], refreshedTokenMessage: res.locals.refreshedTokenMessage})`
+  - Example: `res.status(200).json({data: [{username: "Mario", email: "mario.red@email.com", role: "Admin"}, {username: "Luigi", email: "luigi.red@email.com", role: "Regular"}, {username: "admin", email: "admin@email.com", Role: "Admin"} ], refreshedTokenMessage: res.locals.refreshedTokenMessage})`
 - Returns a 401 error if called by an authenticated user who is not an admin (authType = Admin)
  */
 export const getUsers = async (req, res) => {
@@ -19,24 +19,31 @@ export const getUsers = async (req, res) => {
       return res.status(401).json({ error: "Unauthorized" }); // unauthorized
     }
 
-      // check if the authenticated user is admin
-    const isAdmin = verifyAuth(req, res, {authType:"Admin"})
+    // check if the authenticated user is admin
+    const isAdmin = verifyAuth(req, res, { authType: "Admin" });
 
     if(!isAdmin.authorized){
       return res.status(401).json({ error: isAdmin.cause }); // unauthorized
     }
 
-    const users = await User.find({}, 'username email role -_id')
-    .then(users => {
-      // Check if any users are found
-      if (users.length === 0) {
-        return []; // Return an empty array if there are no users
+    const users = await User.find({}, "username email role -_id").then(
+      (users) => {
+        // Check if any users are found
+        if (users.length === 0) {
+          return []; // Return an empty array if there are no users
+        }
+
+        // Return the array of users
+        return users;
       }
+    );
 
-      // Return the array of users
-      return users;})
-
-    res.status(200).json({data: users, refreshedTokenMessage: res.locals.refreshedTokenMessage});
+    res
+      .status(200)
+      .json({
+        data: users,
+        refreshedTokenMessage: res.locals.refreshedTokenMessage,
+      });
   } catch (error) {
     res.status(500).json(error);
   }
@@ -60,8 +67,14 @@ export const getUser = async (req, res) => {
     }
 
     const username = req.params.username;
-    const userParam = await User.findOne({ username: username }, 'username email role -_id');
-    const user = await User.findOne({ refreshToken: cookie.refreshToken }, 'username email role -_id');
+    const userParam = await User.findOne(
+      { username: username },
+      "username email role -_id"
+    );
+    const user = await User.findOne(
+      { refreshToken: cookie.refreshToken },
+      "username email role -_id"
+    );
     if (!user) {
       return res.status(401).json({ error: "User not found" });
     }
@@ -69,17 +82,24 @@ export const getUser = async (req, res) => {
       return res.status(400).json({ error: "Username not found" });
     }
 
-
     // check if the authenticated user is admin
-    const isAdmin = verifyAuth(req, res, {authType:"Admin"})
+    const isAdmin = verifyAuth(req, res, { authType: "Admin" });
 
     // check if the authenticated user who is the same user as the one in the route parameter
-    const isSameUser = verifyAuth(req, res, {authType: "User", username:req.params.username})
+    const isSameUser = verifyAuth(req, res, {
+      authType: "User",
+      username: req.params.username,
+    });
 
     if (!isSameUser.authorized && !isAdmin.authorized)
       return res.status(401).json({ error: "Unauthorized" });
 
-    res.status(200).json({data: userParam, refreshedTokenMessage: res.locals.refreshedTokenMessage});
+    res
+      .status(200)
+      .json({
+        data: userParam,
+        refreshedTokenMessage: res.locals.refreshedTokenMessage,
+      });
   } catch (error) {
     res.status(500).json(error);
   }
@@ -109,7 +129,7 @@ list of members
 
 export const createGroup = async (req, res) => {
   try {
-    const user = verifyAuth(req, res, {authType: "Simple"});
+    const user = verifyAuth(req, res, { authType: "Simple" });
     if (!user || !user.authorized)
       return res.status(401).json({ message: "Unauthorized" });
     const { name, memberEmails } = req.body;
@@ -123,10 +143,10 @@ export const createGroup = async (req, res) => {
     const members = [];
     const alreadyInGroup = [];
     const membersNotFound = [];
-    const invalidEmails =[];
+    const invalidEmails = [];
     for (const email of memberEmails) {
       // Check the format of input emails
-      if (!isValidEmail(email)){
+      if (!isValidEmail(email)) {
         // check the format of email
         if (!isValidEmail(email)) {
           invalidEmails.push(email);
@@ -149,7 +169,9 @@ export const createGroup = async (req, res) => {
       members.push({ email: email, user: user._id });
     }
     if (invalidEmails.length > 0) {
-      return res.status(400).json({ data: invalidEmails, message: "Invalid email format" });
+      return res
+        .status(400)
+        .json({ data: invalidEmails, message: "Invalid email format" });
     }
     if (
       alreadyInGroup.length === memberEmails.length ||
@@ -170,7 +192,6 @@ export const createGroup = async (req, res) => {
     res.status(500).json(err.message);
   }
 };
-
 
 /**
  
@@ -371,97 +392,129 @@ or do not exist in the database
 - Returns a 401 error if called by an authenticated user who is not part of the group (authType = Group) if the route is `api/groups/:name/remove`
 - Returns a 401 error if called by an authenticated user who is not an admin (authType = Admin) if the route is `api/groups/:name/pull`
  */
-    export const removeFromGroup = async (req, res) => {
-      try {
-        const name = req.params.name;
-        const groupCurrent = await Group.findOne({name: name});
-        if(!groupCurrent){
-          return res.status(400).json({error: "the group does not exist"})
-        }
+export const removeFromGroup = async (req, res) => {
+  try {
+    const name = req.params.name;
+    const groupCurrent = await Group.findOne({ name: name });
+    if (!groupCurrent) {
+      return res.status(400).json({ error: "the group does not exist" });
+    }
 
-        const isAdminRoute = req.url.includes("/pull");
-        const isPartOfTheGroup = req.url.includes("/remove");
-        if(isAdminRoute){
-          const adminAuth = verifyAuth(req, res, {authType: "Admin"});
-          if(!adminAuth.authorized){
-            return res.status(401).json({error: "unauthorized, only admins have access to this feature"})
-          }
-        }else if(isPartOfTheGroup){
-          const emails1 = groupCurrent.members.map(a => a.email);
-          const groupAuth = verifyAuth(req, res, {authType: "Group", emails: emails1})
-          if(!groupAuth.authorized){
-
-            return res.status(401).json({error: "unauthorized, the user must be part of the group in order to access this functionality"})
-          }
-        }else{
-          return res.status(401).json({error: "unauthorized"});
-        }
-
-        const {emails} = req.body;
-        if (!emails){
-          return res.status(400).json({ error: "Missing or wrong parameters" });
-        }
-
-        if(groupCurrent.members.length === 1){
-          return res.status(400).json({error: `only one member left in the group named ${name}, it is not possible to remove him`});
-        }
-
-        const notInGroup = [];
-        const membersNotFound = [];
-        const members = groupCurrent.members;
-       
-        for(const email of emails){
-          if(!isValidEmail(email)){
-            return res.status(400).json({error: `the email ${email} is not in a valid format`});
-          }
-
-          if(email.trim() === ""){
-            return res.status(400).json({error: "empty string is not a valid email"});
-          }
-        }
-    
-        for(const email of emails){
-          const user = await User.findOne({email: email});//checks if the current email is associated to any user
-          if(!user){
-            membersNotFound.push(email);//if the user does not exist
-          }else{
-            const check1 = members.find((object) => object.email === email); //if the user is present in the group
-            if(!check1){
-              notInGroup.push(email);
-            }
-          }
-        }
-        
-        for(const email of emails){
-          const userToRemove = members.find((object) => object.email === email);
-          if(userToRemove){
-            const cancelled = await Group.updateOne({name: name}, {$pull: {members: {email: userToRemove.email}}});
-            //take the group, find the group corresponding to that name, check inside the members array if there is any object
-            //which has that email (userToRemove); if you find it, you delte the object from the array
-          }
-        }
-
-        const list = await Group.findOne({name: name}); // I need the current group updated
-        const remainingMembers = list.members.map(a => a.email);
-        
-        if(emails.length === membersNotFound.length || emails.length === notInGroup.length || emails.length === (membersNotFound.length + notInGroup.length)){
-          return res.status(400).json({error: "the requested members do not exist or they do not belong to the specified group"});
-        }
-    
-        return res.json({data:{
-          group: {
-            name: name,
-            members: remainingMembers
-          },
-          membersNotFound: membersNotFound,
-          notInGroup: notInGroup
-        }, refreshedTokenMessage: res.locals.refreshedTokenMessage
-        });
-    
-      } catch (err) {
-        res.status(500).json(err.message);
+    const isAdminRoute = req.url.includes("/pull");
+    const isPartOfTheGroup = req.url.includes("/remove");
+    if (isAdminRoute) {
+      const adminAuth = verifyAuth(req, res, { authType: "Admin" });
+      if (!adminAuth.authorized) {
+        return res
+          .status(401)
+          .json({
+            error: "unauthorized, only admins have access to this feature",
+          });
       }
-    };
+    } else if (isPartOfTheGroup) {
+      const emails1 = groupCurrent.members.map((a) => a.email);
+      const groupAuth = verifyAuth(req, res, {
+        authType: "Group",
+        emails: emails1,
+      });
+      if (!groupAuth.authorized) {
+        return res
+          .status(401)
+          .json({
+            error:
+              "unauthorized, the user must be part of the group in order to access this functionality",
+          });
+      }
+    } else {
+      return res.status(401).json({ error: "unauthorized" });
+    }
+
+    const { emails } = req.body;
+    if (!emails) {
+      return res.status(400).json({ error: "Missing or wrong parameters" });
+    }
+
+    if (groupCurrent.members.length === 1) {
+      return res
+        .status(400)
+        .json({
+          error: `only one member left in the group named ${name}, it is not possible to remove him`,
+        });
+    }
+
+    const notInGroup = [];
+    const membersNotFound = [];
+    const members = groupCurrent.members;
+
+    for (const email of emails) {
+      if (!isValidEmail(email)) {
+        return res
+          .status(400)
+          .json({ error: `the email ${email} is not in a valid format` });
+      }
+
+      if (email.trim() === "") {
+        return res
+          .status(400)
+          .json({ error: "empty string is not a valid email" });
+      }
+    }
+
+    for (const email of emails) {
+      const user = await User.findOne({ email: email }); //checks if the current email is associated to any user
+      if (!user) {
+        membersNotFound.push(email); //if the user does not exist
+      } else {
+        const check1 = members.find((object) => object.email === email); //if the user is present in the group
+        if (!check1) {
+          notInGroup.push(email);
+        }
+      }
+    }
+
+    for (const email of emails) {
+      const userToRemove = members.find((object) => object.email === email);
+      if (userToRemove) {
+        const cancelled = await Group.updateOne(
+          { name: name },
+          { $pull: { members: { email: userToRemove.email } } }
+        );
+        //take the group, find the group corresponding to that name, check inside the members array if there is any object
+        //which has that email (userToRemove); if you find it, you delte the object from the array
+      }
+    }
+
+    const list = await Group.findOne({ name: name }); // I need the current group updated
+    const remainingMembers = list.members.map((a) => a.email);
+
+    if (
+      emails.length === membersNotFound.length ||
+      emails.length === notInGroup.length ||
+      emails.length === membersNotFound.length + notInGroup.length
+    ) {
+      return res
+        .status(400)
+        .json({
+          error:
+            "the requested members do not exist or they do not belong to the specified group",
+        });
+    }
+
+    return res.json({
+      data: {
+        group: {
+          name: name,
+          members: remainingMembers,
+        },
+        membersNotFound: membersNotFound,
+        notInGroup: notInGroup,
+      },
+      refreshedTokenMessage: res.locals.refreshedTokenMessage,
+    });
+  } catch (err) {
+    res.status(500).json(err.message);
+  }
+};
 
 /**
  * Delete a user
@@ -471,6 +524,7 @@ or do not exist in the database
 - Response `data` Content: An object having an attribute that lists the number of `deletedTransactions` and an attribute that specifies whether the user was also `deletedFromGroup` or not
   - Example: `res.status(200).json({data: {deletedTransaction: 1, deletedFromGroup: true}, refreshedTokenMessage: res.locals.refreshedTokenMessage})`
 - If the user is the last user of a group then the group is deleted as well
+- Returns a 400 error if the user to delete is an Admin
 - Returns a 400 error if the request body does not contain all the necessary attributes
 - Returns a 400 error if the email passed in the request body is an empty string
 - Returns a 400 error if the email passed in the request body is not in correct email format
@@ -478,35 +532,33 @@ or do not exist in the database
 - Returns a 401 error if called by an authenticated user who is not an admin (authType = Admin) 
  */
 export const deleteUser = async (req, res) => {
-
   try {
-
     const cookie = req.cookies;
     if (!cookie.accessToken || !cookie.refreshToken) {
       return res.status(401).json({ error: "Unauthorized" }); // unauthorized
     }
 
     // check if authenticated user is admin
-    const isAdmin = verifyAuth(req, res, {authType:"Admin"})
-    if(!isAdmin.authorized){
+    const isAdmin = verifyAuth(req, res, { authType: "Admin" });
+    if (!isAdmin.authorized) {
       return res.status(401).json({ message: isAdmin.cause }); // unauthorized
     }
 
     const { email } = req.body;
 
     // check if the request body does contain all the necessary attributes
-    if (email===undefined) {
-      return res.status(400).json({ error: 'email is missing' });
+    if (email === undefined) {
+      return res.status(400).json({ error: "email is missing" });
     }
-  
+
     // check if the email passed in the request body is an empty string
-    if (email.trim() === '') {
-      return res.status(400).json({ error: 'email cannot be empty' });
+    if (email.trim() === "") {
+      return res.status(400).json({ error: "email cannot be empty" });
     }
 
     // check if the email passed in the request body is in correct email format
-    if(!isValidEmail(email)){
-      return res.status(400).json({ error: 'email is not in correct form' });
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ error: "email is not in correct form" });
     }
 
     const deletedUser = await User.findOneAndDelete({ email: req.body.email });
@@ -522,30 +574,40 @@ export const deleteUser = async (req, res) => {
     }
 
     const userTransactions = await transactions.find({
-        username: deletedUser.username
+      username: deletedUser.username,
     });
 
-    const idList = userTransactions.map(transaction => transaction._id);
+    const idList = userTransactions.map((transaction) => transaction._id);
 
-    const deletedTransactions = await transactions.deleteMany({ _id: { $in: idList } });
+    const deletedTransactions = await transactions.deleteMany({
+      _id: { $in: idList },
+    });
 
-    const userGroup = await Group.findOne({ 'members.email': email });
-    let deletedFromGroup = null
-    if (!userGroup){
-      deletedFromGroup = false
-    }
-    else{
-      if(userGroup.members.length==1){
-        await Group.deleteOne({ _id: userGroup._id })
+    const userGroup = await Group.findOne({ "members.email": email });
+    let deletedFromGroup = null;
+    if (!userGroup) {
+      deletedFromGroup = false;
+    } else {
+      if (userGroup.members.length == 1) {
+        await Group.deleteOne({ _id: userGroup._id });
+      } else {
+        await Group.updateOne(
+          { _id: userGroup._id },
+          { $pull: { members: { email: email } } }
+        );
       }
-      else{
-        await Group.updateOne({_id: userGroup._id}, {$pull: {members: {email: email}}});
-      }      
-      deletedFromGroup = true
+      deletedFromGroup = true;
     }
 
-    return res.status(200).json({data: {deletedTransaction: deletedTransactions.deletedCount, deletedFromGroup: deletedFromGroup}, refreshedTokenMessage: res.locals.refreshedTokenMessage})
-
+    return res
+      .status(200)
+      .json({
+        data: {
+          deletedTransaction: deletedTransactions.deletedCount,
+          deletedFromGroup: deletedFromGroup,
+        },
+        refreshedTokenMessage: res.locals.refreshedTokenMessage,
+      });
   } catch (error) {
     return res.status(500).json(error);
   }
@@ -565,28 +627,33 @@ export const deleteUser = async (req, res) => {
  */
 export const deleteGroup = async (req, res) => {
   try {
-    const adminAuth = verifyAuth(req, res, {authType: "Admin"});
-    if(!adminAuth.authorized){
-      return res.status(401).json({error: "unauthorised, only admins have access this feature"})
-    }
-    
-    const {name} = req.body;
-    if(!name){
-      return res.status(400).json({error: "missing parameters"})
-    }
-    if(typeof name !== "string"){
-      return res.status(400).json({error: "invalid name"});
-    }
-    if(name.trim() === ""){
-      return res.status(400).json({error: "empty string is not a valid group"})
-    }
-    const group = await Group.deleteOne({name: name});
-    if(group.deletedCount === 0){
-      return res.status(400).json({error: "the group does not exist"});
+    const adminAuth = verifyAuth(req, res, { authType: "Admin" });
+    if (!adminAuth.authorized) {
+      return res
+        .status(401)
+        .json({ error: "unauthorised, only admins have access this feature" });
     }
 
-    return res.json({data: {error: "the group has been correctly deleted"}});
-    
+    const { name } = req.body;
+    if (!name) {
+      return res.status(400).json({ error: "missing parameters" });
+    }
+    if (typeof name !== "string") {
+      return res.status(400).json({ error: "invalid name" });
+    }
+    if (name.trim() === "") {
+      return res
+        .status(400)
+        .json({ error: "empty string is not a valid group" });
+    }
+    const group = await Group.deleteOne({ name: name });
+    if (group.deletedCount === 0) {
+      return res.status(400).json({ error: "the group does not exist" });
+    }
+
+    return res.json({
+      data: { error: "the group has been correctly deleted" },
+    });
   } catch (err) {
     res.status(500).json(err.message);
   }

@@ -1,8 +1,8 @@
-import bcrypt from 'bcryptjs';
-import { User } from '../models/User.js';
-import jwt from 'jsonwebtoken';
-import { verifyAuth } from './utils.js';
-import { isValidEmail } from './utils.js';
+import bcrypt from "bcryptjs";
+import { User } from "../models/User.js";
+import jwt from "jsonwebtoken";
+import { verifyAuth } from "./utils.js";
+import { isValidEmail } from "./utils.js";
 
 /**
  * 
@@ -18,42 +18,49 @@ import { isValidEmail } from './utils.js';
 - Returns a 400 error if the email in the request body identifies an already existing user
  */
 export const register = async (req, res) => {
-    try {
-
-        const { username, email, password } = req.body;
-        if (username === undefined || email===undefined || password===undefined){
-            return res.status(400).json({ error: 'Missing attributes' });
-        }
-
-        if ((username.trim() === '') || (email.trim() === '') || (password.trim() === '')) {
-            return res.status(400).json({ error: 'Empty attributes' });
-        }
-
-        if (!isValidEmail(email)){
-            return res.status(400).json({ error: 'Email is not valid' });
-        }
-
-        const existingUser = await User.findOne({ email: req.body.email });
-        const existingUser1 = await User.findOne({username: req.body.username});
-
-        if(existingUser){
-            return res.status(400).json({ error: 'Email is already registered' });
-        }
-
-        if(existingUser1){
-            return res.status(400).json({ error: 'Username is already registered' });
-        }
-
-        const hashedPassword = await bcrypt.hash(password, 12);
-        const newUser = await User.create({
-            username,
-            email,
-            password: hashedPassword,
-        });
-        res.status(200).json('user added succesfully');
-    } catch (err) {
-        res.status(400).json(err);
+  try {
+    const { username, email, password } = req.body;
+    if (
+      username === undefined ||
+      email === undefined ||
+      password === undefined
+    ) {
+      return res.status(400).json({ error: "Missing attributes" });
     }
+
+    if (
+      username.trim() === "" ||
+      email.trim() === "" ||
+      password.trim() === ""
+    ) {
+      return res.status(400).json({ error: "Empty attributes" });
+    }
+
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ error: "Email is not valid" });
+    }
+
+    const existingUser = await User.findOne({ email: req.body.email });
+    const existingUser1 = await User.findOne({ username: req.body.username });
+
+    if (existingUser) {
+      return res.status(400).json({ error: "Email is already registered" });
+    }
+
+    if (existingUser1) {
+      return res.status(400).json({ error: "Username is already registered" });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 12);
+    const newUser = await User.create({
+      username,
+      email,
+      password: hashedPassword,
+    });
+    res.status(200).json("user added succesfully");
+  } catch (err) {
+    res.status(400).json(err);
+  }
 };
 
 /**
@@ -70,43 +77,50 @@ export const register = async (req, res) => {
 - Returns a 400 error if the email in the request body identifies an already existing user
  */
 export const registerAdmin = async (req, res) => {
-    try {
-        const { username, email, password } = req.body
-        if (username === undefined || email===undefined || password===undefined){
-            return res.status(400).json({ error: 'Missing attributes' });
-        }
-
-        if ((username.trim() === '') || (email.trim() === '') || (password.trim() === '')) {
-            return res.status(400).json({ error: 'Empty attributes' });
-        }
-
-        if (!isValidEmail(email)){
-            return res.status(400).json({ error: 'Email is not valid' });
-        }
-
-        const existingUser = await User.findOne({ email: req.body.email });
-        const existingUser1 = await User.findOne({username: req.body.username});
-
-        if(existingUser){
-            return res.status(400).json({ error: 'Email is already registered' });
-        }
-
-        if(existingUser1){
-            return res.status(400).json({ error: 'Username is already registered' });
-        }
-        const hashedPassword = await bcrypt.hash(password, 12);
-        const newUser = await User.create({
-            username,
-            email,
-            password: hashedPassword,
-            role: "Admin"
-        });
-        res.status(200).json('admin added succesfully');
-    } catch (err) {
-        res.status(500).json(err);
+  try {
+    const { username, email, password } = req.body;
+    if (
+      username === undefined ||
+      email === undefined ||
+      password === undefined
+    ) {
+      return res.status(400).json({ error: "Missing attributes" });
     }
 
-}
+    if (
+      username.trim() === "" ||
+      email.trim() === "" ||
+      password.trim() === ""
+    ) {
+      return res.status(400).json({ error: "Empty attributes" });
+    }
+
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ error: "Email is not valid" });
+    }
+
+    const existingUser = await User.findOne({ email: req.body.email });
+    const existingUser1 = await User.findOne({ username: req.body.username });
+
+    if (existingUser) {
+      return res.status(400).json({ error: "Email is already registered" });
+    }
+
+    if (existingUser1) {
+      return res.status(400).json({ error: "Username is already registered" });
+    }
+    const hashedPassword = await bcrypt.hash(password, 12);
+    const newUser = await User.create({
+      username,
+      email,
+      password: hashedPassword,
+      role: "Admin",
+    });
+    res.status(200).json("admin added succesfully");
+  } catch (err) {
+    res.status(500).json(err);
+  }
+};
 
 /**
  * Perform login 
@@ -168,17 +182,29 @@ export const login = async (req, res) => {
 - Returns a 400 error if the refresh token in the request's cookies does not represent a user in the database
  */
 export const logout = async (req, res) => {
-    const refreshToken = req.cookies.refreshToken
-    if (!refreshToken) return res.status(400).json("user not found")
-    const user = await User.findOne({ refreshToken: refreshToken })
-    if (!user) return res.status(400).json('user not found')
-    try {
-        user.refreshToken = null
-        res.cookie("accessToken", "", { httpOnly: true, path: '/api', maxAge: 0, sameSite: 'none', secure: true })
-        res.cookie('refreshToken', "", { httpOnly: true, path: '/api', maxAge: 0, sameSite: 'none', secure: true })
-        const savedUser = await user.save()
-        res.status(200).json({data: {message: 'User logged out'}})
-    } catch (error) {
-        res.status(400).json(error)
-    }
-}
+  const refreshToken = req.cookies.refreshToken;
+  if (!refreshToken) return res.status(400).json("user not found");
+  const user = await User.findOne({ refreshToken: refreshToken });
+  if (!user) return res.status(400).json("user not found");
+  try {
+    user.refreshToken = null;
+    res.cookie("accessToken", "", {
+      httpOnly: true,
+      path: "/api",
+      maxAge: 0,
+      sameSite: "none",
+      secure: true,
+    });
+    res.cookie("refreshToken", "", {
+      httpOnly: true,
+      path: "/api",
+      maxAge: 0,
+      sameSite: "none",
+      secure: true,
+    });
+    const savedUser = await user.save();
+    res.status(200).json({ data: { message: "User logged out" } });
+  } catch (error) {
+    res.status(400).json(error);
+  }
+};

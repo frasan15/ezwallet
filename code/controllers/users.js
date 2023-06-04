@@ -45,7 +45,7 @@ export const getUsers = async (req, res) => {
         refreshedTokenMessage: res.locals.refreshedTokenMessage,
       });
   } catch (error) {
-    res.status(500).json(error);
+    res.status(500).json(error.message);
   }
 };
 
@@ -101,7 +101,7 @@ export const getUser = async (req, res) => {
         refreshedTokenMessage: res.locals.refreshedTokenMessage,
       });
   } catch (error) {
-    res.status(500).json(error);
+    res.status(500).json(error.message);
   }
 };
 
@@ -609,7 +609,7 @@ export const deleteUser = async (req, res) => {
         refreshedTokenMessage: res.locals.refreshedTokenMessage,
       });
   } catch (error) {
-    return res.status(500).json(error);
+    return res.status(500).json(error.message);
   }
 };
 

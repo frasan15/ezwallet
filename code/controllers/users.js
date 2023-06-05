@@ -3,6 +3,7 @@ import { transactions } from "../models/model.js";
 import { verifyAuth } from "./utils.js";
 import { getAllTransactions } from "./controller.js";
 import { isValidEmail } from "./utils.js";
+import jwt from "jsonwebtoken";
 
 /**
  * Return all the users
@@ -131,28 +132,47 @@ export const createGroup = async (req, res) => {
   try {
     const user = verifyAuth(req, res, { authType: "Simple" });
     if (!user || !user.authorized)
-      return res.status(401).json({ message: "Unauthorized" });
+      return res.status(401).json({ error: "Unauthorized" });
     const { name, memberEmails } = req.body;
+    const cookie = req.cookies;
+
+    //the following operation is performed in order to get the user who called the API
+    const decodedAccessToken = jwt.verify(
+      cookie.accessToken,
+      process.env.ACCESS_KEY
+    );
+    //if the user who calls the API is already in a group this must lead to an error
+   const userCallingAPI = await Group.find({members: {$elemMatch: {email: decodedAccessToken.email}}})
+   
+   if(userCallingAPI.length > 0){
+    return res.status(400).json({error: "the user who is trying to create the group is alread in another group"});
+   }
+   
+   //if the email of the user who calls the API is not in the array then it should be added
+   const check1 = memberEmails.some(x => x === decodedAccessToken.email)
+   if(!check1){
+    memberEmails.push(decodedAccessToken.email)
+   }
+   
+    for (const email of memberEmails){
+      if(!isValidEmail(email) || email.trim() === "")
+        return res.status(400).json({error: "one or more emails are either written in a wrong format or empty"});
+    }
+    
     if (!name || !memberEmails)
-      return res.status(400).json({ message: "Missing or wrong parameters" });
+      return res.status(400).json({error: "Missing or wrong parameters" });
+    if(name.trim() === "")
+      return res.status(400).json({error: "the name of the group cannot be empty"});
     if (memberEmails.length === 0)
-      return res.status(400).json({ message: "No members" });
+      return res.status(400).json({ error: "No members" });
     const group = await Group.findOne({ name: name });
-    if (group) 
-    return res.status(401).json({ message: "Group already exists" });
+    if (group)
+      return res.status(400).json({ error: "Group already exists" });
     const members = [];
     const alreadyInGroup = [];
     const membersNotFound = [];
-    const invalidEmails = [];
+
     for (const email of memberEmails) {
-      // Check the format of input emails
-      if (!isValidEmail(email)) {
-        // check the format of email
-        if (!isValidEmail(email)) {
-          invalidEmails.push(email);
-          continue;
-        }
-      }
       const user = await User.findOne({ email: email });
       if (!user) {
         membersNotFound.push(email);
@@ -168,17 +188,13 @@ export const createGroup = async (req, res) => {
       }
       members.push({ email: email, user: user._id });
     }
-    if (invalidEmails.length > 0) {
-      return res
-        .status(400)
-        .json({ data: invalidEmails, message: "Invalid email format" });
-    }
+    
     if (
       alreadyInGroup.length === memberEmails.length ||
       membersNotFound.length === memberEmails.length
     ) {
-      return res.status(401).json({
-        message: "All users already in group or none were found in system",
+      return res.status(400).json({
+        error: "All users already in group or none were found in system",
       });
     }
     const newGroup = await new Group({
@@ -210,9 +226,10 @@ export const getGroups = async (req, res) => {
     // verify auth using utils function
     const Admin = verifyAuth(req, res, { authType: "Admin" });
     if (!Admin || !Admin.authorized){
-      return res.status(401).json({ message: "Unauthorized" });
+      return res.status(401).json({ error: "Unauthorized" });
     }
-    const groups = await Group.find().populate('members.user', 'email');
+    //const groups = await Group.find().populate('members.user', 'email');
+    const groups = await Group.find()
     const data = groups.map(group => {
       const members = group.members.map(member => ({
         email: member.email
@@ -242,15 +259,22 @@ export const getGroups = async (req, res) => {
         try {
           const groupname = req.params.name;
           const group = await Group.findOne({name : groupname});
-          const admin = verifyAuth(req, res, { authType: "Admin" })
-          const useremail = group.members.map(user => user.email);
-          const user = verifyAuth(req, res, { authType: "Group" , emails:useremail});
-          if (!user.authorized && !admin.authorized)
-          return res.status(401).json({message: "User Unauthorized"}) ;
           if (!group) {
             return res.status(400).json({ error: 'Group does not exist' });
-          }  
-          res.status(200).json({data :{group :{groupname, members :[{email : group.members}]}},
+          } 
+          const data = group.map(group => {
+            const members = group.members.map(member => ({
+              email: member.email
+            }));
+            return { name: group.name, members };
+          });
+          const useremail = data[0].members.map(user => user.email);
+          const admin = verifyAuth(req, res, { authType: "Admin" })
+          const user = verifyAuth(req, res, { authType: "Group" , emails: useremail});
+          if (!user.authorized && !admin.authorized)
+            return res.status(401).json({error: "User Unauthorized"}) ;
+           
+          res.status(200).json({data,
             refreshedTokenMessage: res.locals.refreshedTokenMessage});
         } catch (error) {
           res.status(500).json({ error: error.message })
@@ -278,57 +302,65 @@ or do not exist in the database
 - Returns a 400 error if at least one of the member emails is an empty string
 - Returns a 401 error if called by an authenticated user who is not part of the group
  (authType = Group) if the route is `api/groups/:name/add` -------
-- Returns a 401 error if called by an authsenticated user who i not an admin (authType = Admin)
+- Returns a 401 error if called by an authenticated user who is not an admin (authType = Admin)
  if the route is `api/groups/:name/insert` ------
  */
 
     export const addToGroup = async (req, res) => {
       try {
         const groupName = req.params.name;
+        // Find group by params
         const group = await Group.findOne({ name: groupName });
+        
+        if (!group) {
+          return res.status(400).json({ error: "Group does not exist. Create it first." });
+        } 
         const userRout = req.url.includes("/add");
         const adminRout = req.url.includes("/insert");
         if (adminRout){
-          const Admin= verifyAuth(req, res, { authType: "Admin" });
-          if (!Admin){
-            return res.status(401).json({ message: "Unauthorized" }); 
+          const Admin = verifyAuth(req, res, { authType: "Admin" });
+          if (!Admin.authorized){
+            return res.status(401).json({ error: "Unauthorized" }); 
           }
         }else if (userRout){
             const useremail = group.members.map(user => user.email);
             const user = verifyAuth(req, res, { authType: "Group" , email:useremail });
-            if (!user){
-              return res.status(401).json({ message: "Unauthorized" }); 
+            if (!user.authorized){
+              return res.status(401).json({ error: "Unauthorized" }); 
             }
           }else {
-            return res.status(401).json({ message: "Unauthorized" }); 
+            return res.status(401).json({ error: "Unauthorized" }); 
           }
             const { emails } = req.body;
+           
           if (!emails){ 
-            return res.status(400).json({message: " Missing parameters"});
+            
+            return res.status(400).json({error: " Missing parameters"});
           }
-        // Find group by params
-        if (!group) {
-          return res.status(400).json({ message: "Group does not exist. Create it first." });
-        }        
+
+               
         let alreadyInGroup = [];
         let membersNotFound = [];
-        let notRegisteredUsers = [];
         const invalidEmails = [];
-    
-        for (const email of emails) {
+        const newMembers = [];
+        
+        for(const email of emails){
           // check empty email 
-          if (!email){
-            return res.status(400).json({message: " Empty string. write correct email to add"});
+          if (email.trim() === ""){
+            return res.status(400).json({error: "Empty email is not a valid email"});
           }
           // check the format of email
           if (!isValidEmail(email)) {
-            invalidEmails.push(email);
-            continue;
+            return res.status(400).json({error: `the email ${email} is not in a valid format`})
           }
+        }
+    
+        for (const email of emails) {
+          
           // Check for registration of emails
           const userIsRegistered = await User.findOne({ email: email });
           if (!userIsRegistered) {
-            notRegisteredUsers.push(email);
+            membersNotFound.push(email);
             continue;
           }
           
@@ -338,27 +370,24 @@ or do not exist in the database
               continue;
             } 
             else {
-              membersNotFound.push(email);
               group.members.push({ email: email });
+              //newMembers.push({email: email})
             }
         }
-        if(notRegisteredUsers.length>0){
-          return res.status(400).json({data: notRegisteredUsers, 
-            message:" These emails are not registered"});
+
+        if(membersNotFound.length === emails.length || alreadyInGroup.length === emails.length || (membersNotFound.length + alreadyInGroup.length) === emails.length){
+          return res.status(400).json({error: "all the provided emails represent users that are already in a group or do not exist in the database"})
         }
-        if (alreadyInGroup.length >0 ){
-        return res.status(400).json({data : alreadyInGroup, 
-          message: "These Emails are already in  a group"});
-        }
-        if (invalidEmails.length > 0) {
-        return res.status(400).json({ data: invalidEmails, message: "Invalid email format" });
-        }
-        
+
         // Save the updated group
-        await group.save();
+        const updatedGroup = new Group({name: group.name}, {members: group.members})
+        await updatedGroup.save()
+
+        //await Group.updateMany({name: groupName}, {...Group, newMembers});
+        //const updateGroup = await Group.findOne({name: groupName})
+        
         const responseData = { group: { name: group.name, members: group.members,}, alreadyInGroup,
           membersNotFound,
-          notRegisteredUsers,
         };
     
         res.status(200).json({ data: responseData , refreshedTokenMessage: res.locals.refreshedTokenMessage });

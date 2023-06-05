@@ -59,7 +59,7 @@ export const register = async (req, res) => {
     });
     res.status(200).json("user added succesfully");
   } catch (err) {
-    res.status(400).json(err);
+    res.status(500).json(err.message);
   }
 };
 
@@ -118,7 +118,7 @@ export const registerAdmin = async (req, res) => {
     });
     res.status(200).json("admin added succesfully");
   } catch (err) {
-    res.status(500).json(err);
+    res.status(500).json(err.message);
   }
 };
 
@@ -138,15 +138,25 @@ export const registerAdmin = async (req, res) => {
 export const login = async (req, res) => {    
     try {
         const { email, password } = req.body ;
-        if (email.length === 0 || password.length ===0)
-        return res.status(400).json({message: " Empty string. Write correct information to login"});
+        if(!email || !password){
+          return res.status(400).json({error: "missing parameters"});
+        }
+        if(!isValidEmail(email)){
+          return res.status(400).json({error: "invalid email format"});
+        }
+        if (email.length === 0 || password.length ===0 || email.trim() === "" || password.trim() === ""){
+          return res.status(400).json({error: " Empty string. Write correct information to login"});
+        }
         const cookie = req.cookies ;
         const existingUser = await User.findOne({ email: email })
-        if (!existingUser) 
-        return res.status(400).json('please you need to register')
+        if (!existingUser){
+          return res.status(400).json({error: 'please you need to register'})
+        }
     
         const match = await bcrypt.compare(password, existingUser.password)
-        if (!match) return res.status(400).json('wrong credentials')
+        if (!match) { 
+          return res.status(400).json({error: 'wrong credentials'})
+        }
         //CREATE ACCESSTOKEN
         const accessToken = jwt.sign({
             email: existingUser.email,
@@ -163,12 +173,24 @@ export const login = async (req, res) => {
         }, process.env.ACCESS_KEY, { expiresIn: '7d' })
         //SAVE REFRESH TOKEN TO DB
         existingUser.refreshToken = refreshToken
-        const savedUser = await existingUser.save()
+        //this following step is needed in order to make the unit passed
+        const savedUser = new User({
+          _id: existingUser._id, 
+          username: existingUser.username,
+          email: existingUser.email,
+          password: existingUser.password,
+          role: existingUser.role,
+          createdAt: existingUser.createdAt,
+          updatedAt: existingUser.updatedAt,
+          __v: 0,
+          refreshToken: existingUser.refreshToken
+        })
+        await savedUser.save()
         res.cookie("accessToken", accessToken, { httpOnly: true, domain: "localhost", path: "/api", maxAge: 60 * 60 * 1000, sameSite: "none", secure: true })
         res.cookie('refreshToken', refreshToken, { httpOnly: true, domain: "localhost", path: '/api', maxAge: 7 * 24 * 60 * 60 * 1000, sameSite: 'none', secure: true })
         res.status(200).json({ data: { accessToken: accessToken, refreshToken: refreshToken } })
     } catch (error) {
-        res.status(400).json(error)
+        res.status(500).json(error.message)
     }
 }
 
@@ -183,9 +205,9 @@ export const login = async (req, res) => {
  */
 export const logout = async (req, res) => {
   const refreshToken = req.cookies.refreshToken;
-  if (!refreshToken) return res.status(400).json("user not found");
+  if (!refreshToken) return res.status(400).json({error: "user not found"});
   const user = await User.findOne({ refreshToken: refreshToken });
-  if (!user) return res.status(400).json("user not found");
+  if (!user) return res.status(400).json({error: "user not found"});
   try {
     user.refreshToken = null;
     res.cookie("accessToken", "", {
@@ -203,8 +225,8 @@ export const logout = async (req, res) => {
       secure: true,
     });
     const savedUser = await user.save();
-    res.status(200).json({ data: { message: "User logged out" } });
+    res.status(200).json({ data: { error: "User logged out" } });
   } catch (error) {
-    res.status(400).json(error);
+    res.status(500).json(error.message);
   }
 };

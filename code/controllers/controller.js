@@ -216,7 +216,7 @@ export const getCategories = async (req, res) => {
     try {
         const user = verifyAuth(req, res, { authType: "Simple" })
         if (!user || !user.authorized)
-        return res.status(401).json({message: "Unauthorized"})
+        return res.status(401).json({error: "Unauthorized"})
         let data = await categories.find({})
         let filter = data.map(v => Object.assign({}, { type: v.type, color: v.color }))
         return res.status(200).json({ data: filter, refreshedTokenMessage: res.locals.refreshedTokenMessage })

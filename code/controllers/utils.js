@@ -129,7 +129,7 @@ export const verifyAuth = (req, res, info) => {
         const username = info1.info.username;
         if (
           username !== decodedAccessToken.username ||
-          username !== decodedRefreshToken
+          username !== decodedRefreshToken.username
         ) {
           return {
             authorized: false,

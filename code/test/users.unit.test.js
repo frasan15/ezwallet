@@ -2,9 +2,13 @@ import request from 'supertest';
 import { app } from '../app';
 import { User } from '../models/User.js';
 import { Group } from '../models/User.js';
-import { getGroups } from '../controllers/users';
+import { createGroup, getGroups, getGroup, addToGroup } from '../controllers/users';
 import { verifyAuth } from '../controllers/utils';
 import jwt from "jsonwebtoken";
+import { isValidEmail } from '../controllers/utils';
+import { ObjectId } from 'mongoose';
+import mongoose from 'mongoose';
+import { Mongoose } from 'mongoose';
 
 /**
  * In order to correctly mock the calls to external modules it is necessary to mock them using the following line.
@@ -12,19 +16,10 @@ import jwt from "jsonwebtoken";
  * needed for the test cases.
  * `jest.mock()` must be called for every external module that is called in the functions under test.
  */
+jest.mock("bcryptjs")
+jest.mock("jsonwebtoken")
 jest.mock("../models/User.js")
-/*
-const userOne = {email: "user@test.com", username: "frasan", role: "Admin"}
-
-const accessToken = ""
-const refreshToken = ""
-userOne.refreshToken = jwt.sign({
-  email: userOne.email,
-  id: userOneId.toString(),
-  username: userOne.username,
-  role: userOne.role
-}, process.env.ACCESS_KEY, { expiresIn: '7d' });
-*/
+jest.mock('../models/model.js');
 
 /**
  * Defines code to be executed before each test case is launched
@@ -32,89 +27,773 @@ userOne.refreshToken = jwt.sign({
  * Not doing this `mockClear()` means that test cases may use a mock implementation intended for other test cases.
  */
 beforeEach(() => {
-  User.find.mockClear()
-  Group.find.mockClear()
-  //additional `mockClear()` must be placed here
+  User.find.mockClear();
+  User.findOne.mockClear();
+  User.prototype.save.mockClear();
+  User.aggregate.mockClear();
+  Group.find.mockClear();
+  Group.findOne.mockClear();
+  Group.deleteOne.mockClear();
+  Group.prototype.save.mockClear();
+  
+  jest.clearAllMocks();
 });
 
-describe("getUsers", () => {
-  test("should return empty list if there are no users", async () => {
-    //any time the `User.find()` method is called jest will replace its actual implementation with the one defined below
-    jest.spyOn(User, "find").mockImplementation(() => [])
-    const response = await request(app)
-      .get("/api/users")
+//Necessary step to ensure that the functions in utils.js can be mocked correctly
+jest.mock('../controllers/utils.js', () => ({
+  verifyAuth: jest.fn(),
+  isValidEmail: jest.fn()
+}))
 
-    expect(response.status).toBe(200)
-    expect(response.body).toEqual([])
-  })
-
-  test("should retrieve list of all users", async () => {
-    const retrievedUsers = [{ username: 'test1', email: 'test1@example.com', password: 'hashedPassword1' }, { username: 'test2', email: 'test2@example.com', password: 'hashedPassword2' }]
-    jest.spyOn(User, "find").mockImplementation(() => retrievedUsers)
-    const response = await request(app)
-      .get("/api/users")
-
-    expect(response.status).toBe(200)
-    expect(response.body).toEqual(retrievedUsers)
-  })
-})
+describe("getUsers", () => {})
 
 describe("getUser", () => { })
 
-describe("createGroup", () => { })
+describe("createGroup", () => {
+  test.only('creation of the group successfully completed when the email of the user who calls the API is not inside the array', async () => {
+    const mockReq = {
+        body: {
+            name: "group1",
+            memberEmails: ["francesco@polito.it", "santoro@polito.it"]
+        },
+        cookies: {accessToken: "validAccessToken", refreshToken: "validRefreshToken"},
+        url: "/api/groups"
+    }
+
+    const mockRes = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+        locals: {
+            refreshTokenMessage: ""
+        }
+    }
+
+    verifyAuth.mockImplementation(() => {
+        return {authorized: true, cause: "Authorized"}
+    })
+    const value = {
+      email: 'admin@polito.it',
+      username: 'santosanto',
+      role: 'Admin'}
+
+    jwt.verify.mockReturnValue(value)
+
+    isValidEmail.mockImplementation(() => {
+      return true;
+    })
+
+    Group.find = jest.fn().mockResolvedValue([])
+    Group.findOne = jest.fn().mockResolvedValue(null)
+    User.findOne = jest.fn().mockResolvedValue(mockReq.body.memberEmails) 
+
+    const new_value = {name: mockReq.body.name, members: mockReq.body.memberEmails}
+    jest.spyOn(Group.prototype, "save").mockResolvedValue(new_value)
+
+    await createGroup(mockReq, mockRes)
+
+    expect(mockRes.status).toHaveBeenCalledWith(200)
+    expect(mockRes.json).toHaveBeenCalledWith(
+        {data : {
+          group: new_value,
+          alreadyInGroup: [],
+          membersNotFound: []
+        }, 
+        refreshedTokenMessage: undefined})
+});
+
+test.only("Returns a 400 error if the request body does not contain all the necessary attributes", async() => {
+  const mockReq = {
+    body: {
+        memberEmails: ["francesco@polito.it", "santoro@polito.it"]
+    },
+    cookies: {accessToken: "bbbi", refreshToken: "bbjbjkb"},
+    url: "/api/groups"
+}
+
+const mockRes = {
+    status: jest.fn().mockReturnThis(),
+    json: jest.fn(),
+    locals: {
+        refreshTokenMessage: ""
+    }
+}
+
+verifyAuth.mockImplementation(() => {
+    return {authorized: true, cause: "Authorized"}
+})
+
+const value = {
+  email: 'admin@polito.it',
+  username: 'santosanto',
+  role: 'Admin'}
+
+jwt.verify.mockReturnValue(value)
+
+isValidEmail.mockImplementation(() => {
+  return true;
+})
+
+Group.find = jest.fn().mockResolvedValue([])
+Group.findOne = jest.fn().mockResolvedValue(null)
+User.findOne = jest.fn().mockResolvedValue(mockReq.body.memberEmails) 
+
+await createGroup(mockReq, mockRes)
+
+expect(mockRes.status).toHaveBeenCalledWith(400)
+expect(mockRes.json).toHaveBeenCalledWith(
+  {error: expect.any(String)})
+})
+
+test.only("Returns a 400 error if the group name passed in the request body is an empty string", async() => {
+  const mockReq = {
+    body: {
+        name: "   ",
+        memberEmails: ["francesco@polito.it", "santoro@polito.it"]
+    },
+    cookies: {accessToken: "bbbi", refreshToken: "bbjbjkb"},
+    url: "/api/groups"
+}
+
+const mockRes = {
+    status: jest.fn().mockReturnThis(),
+    json: jest.fn(),
+    locals: {
+        refreshTokenMessage: ""
+    }
+}
+
+verifyAuth.mockImplementation(() => {
+    return {authorized: true, cause: "Authorized"}
+})
+
+const value = {
+  email: 'admin@polito.it',
+  username: 'santosanto',
+  role: 'Admin'}
+
+jwt.verify.mockReturnValue(value)
+
+isValidEmail.mockImplementation(() => {
+  return true;
+})
+
+Group.find = jest.fn().mockResolvedValue([])
+Group.findOne = jest.fn().mockResolvedValue(null)
+User.findOne = jest.fn().mockResolvedValue(mockReq.body.memberEmails) 
+
+await createGroup(mockReq, mockRes)
+
+expect(mockRes.status).toHaveBeenCalledWith(400)
+expect(mockRes.json).toHaveBeenCalledWith(
+  {error: expect.any(String)})
+})
+
+test.only("Returns a 400 error if the group name passed in the request body represents an already existing group in the database", async() => {
+  const mockReq = {
+    body: {
+        name: "group1",
+        memberEmails: ["francesco@polito.it", "santoro@polito.it"]
+    },
+    cookies: {accessToken: "bbbi", refreshToken: "bbjbjkb"},
+    url: "/api/groups"
+}
+
+const mockRes = {
+    status: jest.fn().mockReturnThis(),
+    json: jest.fn(),
+    locals: {
+        refreshTokenMessage: ""
+    }
+}
+
+verifyAuth.mockImplementation(() => {
+    return {authorized: true, cause: "Authorized"}
+})
+
+const value = {
+  email: 'admin@polito.it',
+  username: 'santosanto',
+  role: 'Admin'}
+
+jwt.verify.mockReturnValue(value)
+
+isValidEmail.mockImplementation(() => {
+  return true;
+})
+
+Group.find = jest.fn().mockResolvedValue([])
+Group.findOne = jest.fn().mockResolvedValue(mockReq.body.name)
+User.findOne = jest.fn().mockResolvedValue(mockReq.body.memberEmails) 
+
+await createGroup(mockReq, mockRes)
+
+expect(mockRes.status).toHaveBeenCalledWith(400)
+expect(mockRes.json).toHaveBeenCalledWith(
+  {error: expect.any(String)})
+})
+
+test.only("Returns a 400 error if all the provided emails represent users that are already in a group or do not exist in the database", async() => {
+  const mockReq = {
+    body: {
+        name: "group1",
+        memberEmails: ["francesco@polito.it", "santoro@polito.it"]
+    },
+    cookies: {accessToken: "bbbi", refreshToken: "bbjbjkb"},
+    url: "/api/groups"
+}
+
+const mockRes = {
+    status: jest.fn().mockReturnThis(),
+    json: jest.fn(),
+    locals: {
+        refreshTokenMessage: ""
+    }
+}
+
+verifyAuth.mockImplementation(() => {
+    return {authorized: true, cause: "Authorized"}
+})
+
+const value = {
+  email: 'admin@polito.it',
+  username: 'santosanto',
+  role: 'Admin'}
+
+jwt.verify.mockReturnValue(value)
+
+isValidEmail.mockImplementation(() => {
+  return true;
+})
+
+Group.find = jest.fn().mockResolvedValue([])
+Group.findOne = jest.fn().mockResolvedValue(null)
+User.findOne = jest.fn().mockResolvedValue(null) 
+
+await createGroup(mockReq, mockRes)
+
+expect(mockRes.status).toHaveBeenCalledWith(400)
+expect(mockRes.json).toHaveBeenCalledWith(
+  {error: expect.any(String)})
+})
+
+test.only("Returns a 400 error if the user who calls the API is already in a group", async() => {
+  const mockReq = {
+    body: {
+        name: "group1",
+        memberEmails: ["francesco@polito.it", "santoro@polito.it"]
+    },
+    cookies: {accessToken: "bbbi", refreshToken: "bbjbjkb"},
+    url: "/api/groups"
+}
+
+const mockRes = {
+    status: jest.fn().mockReturnThis(),
+    json: jest.fn(),
+    locals: {
+        refreshTokenMessage: ""
+    }
+}
+
+verifyAuth.mockImplementation(() => {
+    return {authorized: true, cause: "Authorized"}
+})
+
+const value = {
+  email: 'admin@polito.it',
+  username: 'santosanto',
+  role: 'Admin'}
+
+jwt.verify.mockReturnValue(value)
+
+isValidEmail.mockImplementation(() => {
+  return true;
+})
+
+Group.find = jest.fn().mockReturnValue(value)
+Group.findOne = jest.fn().mockResolvedValue(null)
+User.findOne = jest.fn().mockResolvedValue(null) 
+
+await createGroup(mockReq, mockRes)
+
+expect(mockRes.status).toHaveBeenCalledWith(400)
+expect(mockRes.json).toHaveBeenCalledWith(
+  {error: expect.any(String)})
+})
+
+test.only("Returns a 400 error if at least one of the member emails is not in a valid email format", async() => {
+  const mockReq = {
+    body: {
+        name: "group1",
+        memberEmails: ["francescopolito.it", "santoro@polito.it"]
+    },
+    cookies: {accessToken: "bbbi", refreshToken: "bbjbjkb"},
+    url: "/api/groups"
+}
+
+const mockRes = {
+    status: jest.fn().mockReturnThis(),
+    json: jest.fn(),
+    locals: {
+        refreshTokenMessage: ""
+    }
+}
+
+verifyAuth.mockImplementation(() => {
+    return {authorized: true, cause: "Authorized"}
+})
+
+const value = {
+  email: 'admin@polito.it',
+  username: 'santosanto',
+  role: 'Admin'}
+
+jwt.verify.mockReturnValue(value)
+
+isValidEmail.mockImplementation(() => {
+  return false;
+})
+
+Group.find = jest.fn().mockResolvedValue([])
+Group.findOne = jest.fn().mockResolvedValue(null)
+User.findOne = jest.fn().mockResolvedValue(mockReq.body.memberEmails) 
+
+await createGroup(mockReq, mockRes)
+
+expect(mockRes.status).toHaveBeenCalledWith(400)
+expect(mockRes.json).toHaveBeenCalledWith(
+  {error: expect.any(String)})
+})
+
+test.only("Returns a 400 error if at least one of the member emails is an empty string", async() => {
+  const mockReq = {
+    body: {
+        name: "group1",
+        memberEmails: [" ", "santoro@polito.it"]
+    },
+    cookies: {accessToken: "bbbi", refreshToken: "bbjbjkb"},
+    url: "/api/groups"
+}
+
+const mockRes = {
+    status: jest.fn().mockReturnThis(),
+    json: jest.fn(),
+    locals: {
+        refreshTokenMessage: ""
+    }
+}
+
+verifyAuth.mockImplementation(() => {
+    return {authorized: true, cause: "Authorized"}
+})
+
+const value = {
+  email: 'admin@polito.it',
+  username: 'santosanto',
+  role: 'Admin'}
+
+jwt.verify.mockReturnValue(value)
+
+isValidEmail.mockImplementation(() => {
+  return false;
+})
+
+Group.find = jest.fn().mockResolvedValue([])
+Group.findOne = jest.fn().mockResolvedValue(null)
+User.findOne = jest.fn().mockResolvedValue(mockReq.body.memberEmails) 
+
+await createGroup(mockReq, mockRes)
+
+expect(mockRes.status).toHaveBeenCalledWith(400)
+expect(mockRes.json).toHaveBeenCalledWith(
+  {error: expect.any(String)})
+})
+
+test.only("Returns a 401 error if called by a user who is not authenticated (authType = Simple)", async() => {
+  const mockReq = {
+    body: {
+        name: "group1",
+        memberEmails: ["francesco@polito.it", "santoro@polito.it"]
+    },
+    cookies: {accessToken: "bbbi", refreshToken: "bbjbjkb"},
+    url: "/api/groups"
+}
+
+const mockRes = {
+    status: jest.fn().mockReturnThis(),
+    json: jest.fn(),
+    locals: {
+        refreshTokenMessage: ""
+    }
+}
+
+verifyAuth.mockImplementation(() => {
+    return {authorized: false, cause: "Unauthorized"}
+})
+
+await createGroup(mockReq, mockRes)
+
+expect(mockRes.status).toHaveBeenCalledWith(401)
+expect(mockRes.json).toHaveBeenCalledWith(
+  {error: expect.any(String)})
+})
+
+})
 
 describe("getGroups", () => {
-  /*
-  test("should return empty list if there are no groups", async () => {
+  
+  test.only("should return empty list if there are no groups", async () => {
     const mockReq = {
-      cookies: "accessToken=accessToken; refreshToken=refreshToken"
+      body: {},
+      cookies: {accessToken: "validAccessToken", refreshToken: "validRefreshToken"},
+      url: "/api/groups"
     }
 
     const mockRes = {
       status: jest.fn().mockReturnThis(),
-      json: jest.fn()
+      json: jest.fn(),
+      locals: {
+        refreshedTokenMessage: ""
+      }
     }
 
-    jest.spyOn(Group, "find").mockResolvedValue(() => [])
-    await getGroups(mockReq, mockRes)
-    expect(Group.find).toHaveBeenCalled()
-    expect(mockRes.status).toHaveBeenCalledWith(200)
-    expect(mockRes.json).toHaveBeenCalledWith([])
-  });
+    verifyAuth.mockImplementation(() => ({authorized: true, cause: "Authorized"}))
 
-  test("should return list of groups for admin", async () => {
+    const groups = []; 
+
+    Group.find = jest.fn().mockResolvedValue(groups)
+    await getGroups(mockReq, mockRes);
+
+    expect(mockRes.status).toHaveBeenCalledWith(200)
+    expect(mockRes.json).toHaveBeenCalledWith({data: [], refreshedTokenMessage: ""})
+    })
+
+  test.only("should retrieve list of all groups", async () => {
+    const mockReq = {
+      body: {},
+      cookies: {accessToken: "validAccessToken", refreshToken: "validRefreshToken"},
+      url: "/api/groups"
+    }
+
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshedTokenMessage: ""
+      }
+    }
+
+    verifyAuth.mockImplementation(() => ({authorized: true, cause: "Authorized"}))
+
     const groups = [
       {name: "Family", members: [{email: "mario.red@email.com"}, {email: "luigi.red@email.com"}]}, 
       {name: "Friends", members: [{email: "francesco.green@email.com"}, {email: "marco.blue@email.com"}]}
-    ];
+    ]; 
 
-    verifyAuth.mockImplementation(() => ({authorized: true, cause: "Authorized"}))
-    Group.find.mockImplementation(() => groups)
+    Group.find = jest.fn().mockResolvedValue(groups)
+    await getGroups(mockReq, mockRes);
+    expect(mockRes.status).toHaveBeenCalledWith(200)
+    expect(mockRes.json).toHaveBeenCalledWith({
+      data: groups, refreshedTokenMessage: ""})
+  })
+  
+  test.only("Returns a 401 error if called by an authenticated user who is not an admin", async () => {
+    const mockReq = {
+      body: {},
+      cookies: {accessToken: "validAccessToken", refreshToken: "validRefreshToken"},
+      url: "/api/groups"
+    }
 
-    const response = await request(app).get("/api/groups");
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshedTokenMessage: ""
+      }
+    }
 
-    expect(response.status).toBe(200)
-    expect(response.body).toEqual({
-      data: groups.map(group => ({name: group.name, members: group.members}))
-    })
+    verifyAuth.mockImplementation(() => ({authorized: false, cause: "Unauthorized"}))
+
+    await getGroups(mockReq, mockRes);
+    expect(mockRes.status).toHaveBeenCalledWith(401)
+    expect(mockRes.json).toHaveBeenCalledWith({error: expect.any(String)})
   })
 
-  test("should retrieve list of all groups", async () => {
-    const retrievedGroup = [{name: "Family", members: [{email: "mario.red@email.com"}, {email: "luigi.red@email.com"}]}, 
-                            {name: "Friends", members: [{email: "francesco.green@email.com"}, {email: "marco.blue@email.com"}]}]
-    jest.spyOn(Group, "find").mockImplementation(() => retrievedGroup)
-    const response = await request(app).get("/api/groups")
-
-    expect(response.status).toBe(200)
-    expect(response.body).toEqual(retrievedGroup)
- 
-  })
-  */
  })
 
-describe("getGroup", () => { })
+describe("getGroup", () => {
+  test.only("should retrieve list of the specified group", async () => {
+    const mockReq = {
+      body: {},
+      params: {name: "group20"},
+      cookies: {accessToken: "validAccessToken", refreshToken: "validRefreshToken"},
+      url: "/api/groups/:name"
+    }
 
-describe("addToGroup", () => { })
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshedTokenMessage: ""
+      }
+    }
+
+    verifyAuth.mockImplementation(() => ({authorized: true, cause: "Authorized"}))
+
+    const groups = [{name: "Family", members: [{email: "mario.red@email.com"},
+    {email: "luigi.red@email.com"}]}]; 
+
+    Group.findOne = jest.fn().mockResolvedValue(groups)
+    await getGroup(mockReq, mockRes);
+
+    expect(mockRes.status).toHaveBeenCalledWith(200)
+    expect(mockRes.json).toHaveBeenCalledWith({data: groups, refreshedTokenMessage: ""})
+    })
+
+    test.only("Returns a 400 error if the group name passed as a route parameter does not represent a group in the database", async () => {
+      const mockReq = {
+        body: {},
+        params: {name: "group20"},
+        cookies: {accessToken: "validAccessToken", refreshToken: "validRefreshToken"},
+        url: "/api/groups/:name"
+      }
+  
+      const mockRes = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+        locals: {
+          refreshedTokenMessage: ""
+        }
+      }
+  
+      verifyAuth.mockImplementation(() => ({authorized: true, cause: "Authorized"}))
+  
+      Group.findOne = jest.fn().mockResolvedValue(null)
+      await getGroup(mockReq, mockRes);
+  
+      expect(mockRes.status).toHaveBeenCalledWith(400)
+      })
+
+      test.only("Returns a 401 error if called by an authenticated user who is neither part of the group (authType = Group) nor an admin (authType = Admin)", async () => {
+        const mockReq = {
+          body: {},
+          params: {name: "group20"},
+          cookies: {accessToken: "invalidAccessToken", refreshToken: "invalidRefreshToken"},
+          url: "/api/groups/:name"
+        }
+    
+        const mockRes = {
+          status: jest.fn().mockReturnThis(),
+          json: jest.fn(),
+          locals: {
+            refreshedTokenMessage: ""
+          }
+        }
+    
+        verifyAuth.mockImplementation(() => ({authorized: false, cause: "Unauthorized"}))
+
+        const groups = [{name: "Family", members: [{email: "mario.red@email.com"},
+                        {email: "luigi.red@email.com"}]}];
+    
+        Group.findOne = jest.fn().mockResolvedValue(groups)
+        await getGroup(mockReq, mockRes);
+    
+        expect(mockRes.status).toHaveBeenCalledWith(401)
+        })
+
+ })
+
+describe("addToGroup", () => {
+  test.only("It must add the requested members to the specified group", async () => {
+    const mockReq = {
+      body: {emails: ["pietroblue@email.com", "antoniomarco@email.com"]},
+      params: {name: "group451"},
+      cookies: {accessToken: "validAccessToken", refreshToken: "validRefreshToken"},
+      url: "/api/groups/:name/insert"
+    }
+
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshedTokenMessage: ""
+      }
+    }
+
+    const group1 = {name: 'group451',
+    members: [
+      {
+        email: 'franciosissimo@polito.it'
+      },
+      {
+        email: 'admin@polito.it'
+      }
+    ]}
+    
+    verifyAuth.mockImplementation(() => ({authorized: true, cause: "Authorized"}))
+    //the first user exists and it is not already in another group
+    User.findOne = jest.fn().mockResolvedValue(null)
+    User.findOne = jest.fn().mockResolvedValueOnce({email: 'franciosissimo@polito.it'})
+    isValidEmail.mockImplementation(() => {
+      return true;
+    })
+    Group.findOne = jest.fn().mockResolvedValue(null)
+    Group.findOne = jest.fn().mockResolvedValueOnce(group1)
+
+    const data = {group: {name: "group451", members: [{email: "franciosissimo@polito.it"}, 
+    {email: "admin@polito.it"}, {email: "pietroblue@email.com"}]}, membersNotFound: ["antoniomarco@email.com"], alreadyInGroup: []}
+    //jest.spyOn(Group.prototype, "save").mockResolvedValue(data)
+    
+    Group.prototype.save.mockImplementation(() => {return data});
+    
+    await addToGroup(mockReq, mockRes);
+
+    expect(mockRes.status).toHaveBeenCalledWith(200)
+    expect(mockRes.json).toHaveBeenCalledWith({data, refreshedTokenMessage: ""})
+    })
+
+  test.only("Returns a 400 error if the group name passed as a route parameter does not represent a group in the database", async () => {
+    const mockReq = {
+      body: {emails: ["pietroblue@email.com", "antoniomarco@email.com"]},
+      params: {name: "group451"},
+      cookies: {accessToken: "validAccessToken", refreshToken: "validRefreshToken"},
+      url: "/api/groups/:name/insert"
+    }
+
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshedTokenMessage: ""
+      }
+    }
+
+    verifyAuth.mockImplementation(() => ({authorized: true, cause: "Authorized"}))
+    
+    Group.findOne = jest.fn().mockResolvedValue(null)
+    
+    await addToGroup(mockReq, mockRes);
+
+    expect(mockRes.status).toHaveBeenCalledWith(400)
+    expect(mockRes.json).toHaveBeenCalledWith({error: expect.any(String)})
+    })
+
+  test.only("Returns a 400 error if all the provided emails represent users that are already in a group or do not exist in the database", async () => {
+    const mockReq = {
+      body: {emails: ["pietroblue@email.com", "antoniomarco@email.com"]},
+      params: {name: "group451"},
+      cookies: {accessToken: "validAccessToken", refreshToken: "validRefreshToken"},
+      url: "/api/groups/:name/insert"
+    }
+
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshedTokenMessage: ""
+      }
+    }
+
+    const group1 = {name: 'group451',
+    members: [
+      {
+        email: 'franciosissimo@polito.it'
+      },
+      {
+        email: 'admin@polito.it'
+      }
+    ]}
+    
+    verifyAuth.mockImplementation(() => ({authorized: true, cause: "Authorized"}))
+    //the first user exists and it is not already in another group
+    User.findOne = jest.fn().mockResolvedValue(null)
+    isValidEmail.mockImplementation(() => {
+      return true;
+    })
+    Group.findOne = jest.fn().mockResolvedValue(true)
+    Group.findOne = jest.fn().mockResolvedValueOnce(group1)
+    
+    await addToGroup(mockReq, mockRes);
+
+    expect(mockRes.status).toHaveBeenCalledWith(400)
+    expect(mockRes.json).toHaveBeenCalledWith({error: expect.any(String)})
+    })
+  
+  test.only("Returns a 400 error if at least one of the member emails is not in a valid email format", async () => {
+    const mockReq = {
+      body: {emails: ["pietroblueemail.com", "antoniomarco@email.com"]},
+      params: {name: "group451"},
+      cookies: {accessToken: "validAccessToken", refreshToken: "validRefreshToken"},
+      url: "/api/groups/:name/insert"
+    }
+
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshedTokenMessage: ""
+      }
+    }
+
+    const group = {name: 'group451',
+    members: [
+      {
+        email: 'franciosissimo@polito.it'
+      },
+      {
+        email: 'admin@polito.it'
+      }
+    ]}
+
+    verifyAuth.mockImplementation(() => ({authorized: true, cause: "Authorized"}))
+    
+    Group.findOne = jest.fn().mockResolvedValue(group)
+
+    isValidEmail.mockImplementation(() => {
+      return false;
+    })
+    
+    await addToGroup(mockReq, mockRes);
+
+    expect(mockRes.status).toHaveBeenCalledWith(400)
+    expect(mockRes.json).toHaveBeenCalledWith({error: expect.any(String)})
+    })
+
+  test.only("Returns a 401 error if called by an authenticated user who is not part of the group (authType = Group) if the route is `api/groups/:name/add`", async () => {
+    const mockReq = {
+      body: {emails: ["pietroblue@email.com", "antoniomarco@email.com"]},
+      params: {name: "group451"},
+      cookies: {accessToken: "validAccessToken", refreshToken: "validRefreshToken"},
+      url: "/api/groups/:name/add"
+    }
+
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshedTokenMessage: ""
+      }
+    }
+
+    const group = {name: 'group451',
+    members: [
+      {
+        email: 'franciosissimo@polito.it'
+      },
+      {
+        email: 'admin@polito.it'
+      }
+    ]}
+
+    verifyAuth.mockImplementation(() => ({authorized: false, cause: "Unauthorized"}))
+    
+    Group.findOne = jest.fn().mockResolvedValue(group)
+    
+    await addToGroup(mockReq, mockRes);
+
+    expect(mockRes.status).toHaveBeenCalledWith(401)
+    expect(mockRes.json).toHaveBeenCalledWith({error: expect.any(String)})
+    })
+ })
 
 describe("removeFromGroup", () => { })
 

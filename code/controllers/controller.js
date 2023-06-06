@@ -357,15 +357,28 @@ const searchUserAndCheckAdmin = async (req, res, isAdminRoute) => {
     res.status(401).json({ error: isSameUser.cause });
     return true;
   }
+  if (req.params.username) {
+    const user = await User.findOne({ username: req.params.username });
+    if (!user) {
+      res.status(400).json({
+        error: "User not found",
+      });
+      return true;
+    }
+  }
   return false;
 };
 
 const commonTransactionsByUser = async (req, res, filter) => {
   const match = req.params.category
-    ? { "categories_info.type": req.params.category }
-    : {};
-  filter.amount ? (match.amount = filter.amount) : null;
-  filter.date ? (match.date = filter.date) : null;
+  ? { "categories_info.type": req.params.category }
+  : {};
+  if (filter && filter.amount) {
+    match.amount = filter.amount;
+  }
+  if (filter && filter.date) {
+    match.date = filter.date;
+  }
   const allTransactions = await transactions.aggregate([
     {
       $match: {
@@ -393,9 +406,9 @@ const commonTransactionsByUser = async (req, res, filter) => {
       message: "No transactions found",
     });
   }
-  res.json({
+  res.status(200).json({
     data: allTransactions,
-    message: "Success",
+    refreshedTokenMessage: res.locals.refreshedTokenMessage
   });
 };
 
@@ -423,7 +436,7 @@ export const getTransactionsByUser = async (req, res) => {
     if (!isAdminRoute) {
       const filter1 = handleAmountFilterParams(req, res);
       const filter2 = handleDateFilterParams(req, res);
-      filter = Object.assign(filter1, filter2);
+      filter = Object.assign(filter, filter1, filter2);
     }
     commonTransactionsByUser(req, res, filter);
   } catch (error) {
@@ -449,13 +462,13 @@ export const getTransactionsByUserByCategory = async (req, res) => {
   try {
     if (!req.params.category) {
       return res.status(400).json({
-        message: "Category invalid",
+        error: "Category invalid",
       });
     }
     const category = await categories.findOne({ type: req.params.category });
     if (!category) {
-      return res.status(401).json({
-        message: "Category not found",
+      return res.status(400).json({
+        error: "Category not found",
       });
     }
     const isAdminRoute = req.url.includes("/transactions/users/");
@@ -590,14 +603,15 @@ export const getTransactionsByGroupByCategory = async (req, res) => {
     }
     const category = await categories.findOne({ type: req.params.category });
     if (!category) {
-      return res.status(401).json({
+      return res.status(400).json({
         error: "Category not found",
       });
     }
     const isAdminRoute = req.url.includes("/transactions/groups");
     const shouldReturn = await searchGroupAndCheckAdmin(req, res, isAdminRoute);
     if (shouldReturn) return;
-    commonTransactionsByGroup(req, res, isAdminRoute);
+    await commonTransactionsByGroup(req, res, isAdminRoute);
+    return;
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -614,6 +628,7 @@ export const getTransactionsByGroupByCategory = async (req, res) => {
 - Returns a 400 error if the request body does not contain all the necessary attributes
 - Returns a 400 error if the username passed as a route parameter does not represent a user in the database
 - Returns a 400 error if the `_id` in the request body does not represent a transaction in the database
+- Returns a 400 error if the transaction to delete has not been made by the user who calls the function
 - Returns a 401 error if called by an authenticated user who is not the same user as the one in the route (authType = User)
  */
 export const deleteTransaction = async (req, res) => {
@@ -650,8 +665,10 @@ export const deleteTransaction = async (req, res) => {
  */
 export const deleteTransactions = async (req, res) => {
   try {
-    const shouldReturn = await searchUserAndCheckAdmin(req, res, true);
-    if (shouldReturn) return;
+    const isAdmin = verifyAuth(req, res, { authType: "Admin" });
+    if (!isAdmin){
+      return res.status(401).json({ error: isAdmin.cause });
+    }
     if (!req.body._ids || req.body._ids.length === 0) {
       return res.status(400).json({
         error: "Transactions ids invalid",
@@ -676,7 +693,7 @@ export const deleteTransactions = async (req, res) => {
       }
     }
     await transactions.deleteMany({ _id: { $in: req.body._ids } });
-    return res.json({
+    return res.status(200).json({
       message: "Transactions deleted",
       refreshedTokenMessage: res.locals.refreshedTokenMessage,
     });

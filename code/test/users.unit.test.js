@@ -9,6 +9,7 @@ import {
   addToGroup,
   deleteUser,
   getUsers,
+  getUser,
   deleteGroup,
   removeFromGroup
 } from "../controllers/users";
@@ -62,7 +63,136 @@ jest.mock('../controllers/utils.js', () => ({
   isValidEmail: jest.fn()
 }))
 
-describe("getUsers", () => {})
+describe("getUser", () => {
+  test.only("Returns requested user", async () => {
+    const mockReq = {
+      params: {
+        username: "TestUser",
+      },
+      url: "api/users/TestUser",
+      cookies: {
+        accessToken: "testerAccessTokenValid",
+        refreshToken: "testerAccessTokenValid",
+      },
+    };
+
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshTokenMessage: "",
+      },
+    };
+
+    verifyAuth.mockImplementation(() => {
+      return { authorized: true, cause: "Authorized" };
+    });
+
+    User.findOne.mockImplementation(() => {
+      return {
+        username: "TestUser",
+        email: "TestEmail",
+        role: "Regular",
+      };
+    });
+
+    const retrievedUser = {
+      username: "TestUser",
+      email: "TestEmail",
+      role: "Regular",
+    };
+
+    await getUser(mockReq, mockRes);
+
+    expect(mockRes.status).toHaveBeenCalledWith(200);
+    expect(mockRes.json).toHaveBeenCalledWith({
+      data: retrievedUser,
+      refreshedTokenMessage: undefined,
+    });
+  });
+
+  test.only("Returns a 400 error if the username passed as the route parameter does not represent a user in the database", async () => {
+    const mockReq = {
+      params: {
+        username: "TestUser",
+      },
+      url: "api/users/TestUser",
+      cookies: {
+        accessToken: "testerAccessTokenValid",
+        refreshToken: "testerAccessTokenValid",
+      },
+    };
+
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshTokenMessage: "",
+      },
+    };
+
+    verifyAuth.mockImplementation(() => {
+      return { authorized: true, cause: "Authorized" };
+    });
+
+    User.findOne.mockImplementation(() => {
+      return null;
+    });
+
+    await getUser(mockReq, mockRes);
+
+    expect(mockRes.status).toHaveBeenCalledWith(400);
+    expect(mockRes.json).toHaveBeenCalledWith({ error: expect.any(String) });
+  });
+
+  test.only("Returns a 401 error if called by an authenticated user who is neither the same user as the one in the route parameter (authType = User) nor an admin (authType = Admin)", async () => {
+    const mockReq = {
+      params: {
+        username: "TestUser",
+      },
+      url: "api/users/TestUser",
+      cookies: {
+        accessToken: "testerAccessTokenValid",
+        refreshToken: "testerAccessTokenValid",
+      },
+    };
+
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshTokenMessage: "",
+      },
+    };
+
+    User.findOne.mockImplementation(() => {
+      return {
+        username: "TestUser",
+        email: "TestEmail",
+        role: "Regular",
+      };
+    });
+
+    verifyAuth.mockImplementation(() => {
+      return {
+        authorized: false,
+        cause: "username does not match the related user's token",
+      };
+    });
+
+    verifyAuth.mockImplementation(() => {
+      return {
+        authorized: false,
+        cause: "function reserved for admins only",
+      };
+    });
+
+    await getUser(mockReq, mockRes);
+
+    expect(mockRes.status).toHaveBeenCalledWith(401);
+    expect(mockRes.json).toHaveBeenCalledWith({ error: expect.any(String) });
+  });
+});
 
 describe("getUsers", () => {
   test.only("should return empty list if there are no users", async () => {

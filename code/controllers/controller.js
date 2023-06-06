@@ -251,42 +251,41 @@ export const createTransaction = async (req, res) => {
     const { username, amount, type } = req.body;
     if (!username || !amount || !type) {
       return res.status(400).json({
-        message: "Bad request: missing parameters",
+        error: "Bad request: missing parameters",
       });
     }
     if (username === "" || amount === "" || type === "") {
       return res.status(400).json({
-        message: "Bad request: empty string is not a valid parameter",
+        error: "Bad request: empty string is not a valid parameter",
       });
     }
     if (typeof amount !== "number") {
       return res.status(400).json({
-        message: "Amount must be a number",
+        error: "Amount must be a number",
       });
     }
     let floatAmount = Number(amount);
     if (isNaN(floatAmount)) {
       return res.status(400).json({
-        message: "Error parsing amount",
+        error: "Error parsing amount",
       });
     }
     const user = await User.findOne({ username: username });
     if (!user) {
       return res
-        .status(401)
-        .json({ message: "Username in transaction does not exist" });
+        .status(400)
+        .json({ error: "Username in transaction does not exist" });
     }
     const category = await categories.findOne({ type: type });
     if (!category) {
-      return res.status(401).json({ message: "Category does not exist" });
+      return res.status(400).json({ error: "Category does not exist" });
     }
     const new_transactions = new transactions({ username, amount, type });
-    new_transactions
-      .save()
-      .then((data) => res.json(data))
-      .catch((err) => {
-        throw err;
-      });
+    const data = await new_transactions.save();
+    res.status(200).json({
+      data: data,
+      refreshedTokenMessage: res.locals.refreshedTokenMessage,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -307,42 +306,36 @@ export const getAllTransactions = async (req, res) => {
     /**
      * MongoDB equivalent to the query "SELECT * FROM transactions, categories WHERE transactions.type = categories.type"
      */
-    transactions
-      .aggregate([
-        {
-          $lookup: {
-            from: "categories",
-            localField: "type",
-            foreignField: "type",
-            as: "categories_info",
-          },
+    const allTransactions = await transactions.aggregate([
+      {
+        $lookup: {
+          from: "categories",
+          localField: "type",
+          foreignField: "type",
+          as: "categories_info",
         },
-        { $unwind: "$categories_info" },
-      ])
-      .then((result) => {
-        if (result.length == 0)
-          return res.json({
-            data: [],
-            message: "No transactions found",
-          });
-        let data = result.map((v) =>
-          Object.assign(
-            {},
-            {
-              _id: v._id,
-              username: v.username,
-              amount: v.amount,
-              type: v.type,
-              color: v.categories_info.color,
-              date: v.date,
-            }
-          )
-        );
-        res.json(data);
-      })
-      .catch((error) => {
-        throw error;
+      },
+      { $unwind: "$categories_info" },
+    ]);
+    if (allTransactions.length == 0)
+      return res.json({
+        data: [],
+        message: "No transactions found",
       });
+    const data = allTransactions.map((v) =>
+      Object.assign(
+        {},
+        {
+          _id: v._id,
+          username: v.username,
+          amount: v.amount,
+          type: v.type,
+          color: v.categories_info.color,
+          date: v.date,
+        }
+      )
+    );
+    res.status(200).json(data);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -356,19 +349,19 @@ const searchUserAndCheckAdmin = async (req, res, isAdminRoute) => {
   });
 
   if (isAdminRoute && !isAdmin.authorized) {
-    res.status(401).json({ message: isAdmin.cause });
+    res.status(401).json({ error: isAdmin.cause });
     return true;
   }
 
   if (!isAdminRoute && !isSameUser.authorized) {
-    res.status(401).json({ message: isSameUser.cause });
+    res.status(401).json({ error: isSameUser.cause });
     return true;
   }
   if (req.params.username) {
     const user = await User.findOne({ username: req.params.username });
     if (!user) {
       res.status(400).json({
-        message: "User not found",
+        error: "User not found",
       });
       return true;
     }
@@ -378,8 +371,8 @@ const searchUserAndCheckAdmin = async (req, res, isAdminRoute) => {
 
 const commonTransactionsByUser = async (req, res, filter) => {
   const match = req.params.category
-  ? { "categories_info.type": req.params.category }
-  : {};
+    ? { "categories_info.type": req.params.category }
+    : {};
   filter.amount ? (match.amount = filter.amount) : null;
   filter.date ? (match.date = filter.date) : null;
   const allTransactions = await transactions.aggregate([
@@ -486,21 +479,21 @@ export const getTransactionsByUserByCategory = async (req, res) => {
 const searchGroupAndCheckAdmin = async (req, res, checkAdmin) => {
   if (!req.params.name) {
     res.status(400).json({
-      message: "Group invalid",
+      error: "Group invalid",
     });
     return true;
   }
   const group = await Group.findOne({ username: req.params.name });
   if (!group) {
-    res.status(401).json({
-      message: "Group not found",
+    res.status(400).json({
+      error: "Group not found",
     });
     return true;
   }
   if (checkAdmin) {
     const adminAuth = verifyAuth(req, res, { authType: "Admin" });
     if (!adminAuth.authorized) {
-      res.status(401).json({ message: adminAuth.cause });
+      res.status(401).json({ error: adminAuth.cause });
       return true;
     }
   }
@@ -515,13 +508,13 @@ const commonTransactionsByGroup = async (req, res, isAdmin) => {
     const userWhoMadeRequest = await User.findOne({
       refreshToken: req.cookies.refreshToken,
     });
-    const isUserInGroup =
+    const isUserNotInGroup =
       group.members.findIndex(
         (member) => member.email == userWhoMadeRequest.email
       ) == -1;
-    if (isUserInGroup) {
+    if (isUserNotInGroup) {
       return res.status(401).json({
-        message: "User is not in the group",
+        error: "User is not in the group",
       });
     }
   }
@@ -554,9 +547,9 @@ const commonTransactionsByGroup = async (req, res, isAdmin) => {
       allTransactions.push(...singleUserTransactions);
     }
   }
-  return res.json({
+  return res.status(200).json({
     data: allTransactions,
-    message: "Success",
+    refreshedTokenMessage: res.locals.refreshedTokenMessage,
   });
 };
 
@@ -577,7 +570,8 @@ export const getTransactionsByGroup = async (req, res) => {
     const isAdminRoute = req.url.includes("/transactions/groups");
     const shouldReturn = await searchGroupAndCheckAdmin(req, res, isAdminRoute);
     if (shouldReturn) return;
-    commonTransactionsByGroup(req, res, isAdminRoute);
+    await commonTransactionsByGroup(req, res, isAdminRoute);
+    return;
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -600,13 +594,13 @@ export const getTransactionsByGroupByCategory = async (req, res) => {
   try {
     if (!req.params.category) {
       return res.status(400).json({
-        message: "Category invalid",
+        error: "Category invalid",
       });
     }
     const category = await categories.findOne({ type: req.params.category });
     if (!category) {
       return res.status(401).json({
-        message: "Category not found",
+        error: "Category not found",
       });
     }
     const isAdminRoute = req.url.includes("/transactions/groups");
@@ -629,20 +623,19 @@ export const getTransactionsByGroupByCategory = async (req, res) => {
 - Returns a 400 error if the request body does not contain all the necessary attributes
 - Returns a 400 error if the username passed as a route parameter does not represent a user in the database
 - Returns a 400 error if the `_id` in the request body does not represent a transaction in the database
-- Returns a 400 error if the transaction to delete has not been made by the user who calls the function
 - Returns a 401 error if called by an authenticated user who is not the same user as the one in the route (authType = User)
  */
 export const deleteTransaction = async (req, res) => {
   try {
     const shouldReturn = await searchUserAndCheckAdmin(req, res, false);
     if (shouldReturn) return;
-    if (!req.body._id) {
+    if (!req.body || !req.body._id) {
       return res.status(400).json({
-        message: "Transaction id invalid",
+        error: "Transaction id invalid",
       });
     }
     await transactions.deleteOne({ _id: req.body._id });
-    return res.json({
+    return res.status(200).json({
       message: "Transaction deleted",
       refreshedTokenMessage: res.locals.refreshedTokenMessage,
     });
@@ -670,24 +663,24 @@ export const deleteTransactions = async (req, res) => {
     if (shouldReturn) return;
     if (!req.body._ids || req.body._ids.length === 0) {
       return res.status(400).json({
-        message: "Transactions ids invalid",
+        error: "Transactions ids invalid",
       });
     }
     if (req.body._ids.includes("")) {
       return res.status(400).json({
-        message: "Transactions ids invalid",
+        error: "Transactions ids invalid",
       });
     }
     for (const id of req.body._ids) {
       if (!mongoose.Types.ObjectId.isValid(id)) {
         return res.status(400).json({
-          message: `${id} is not a valid transaction id`,
+          error: `${id} is not a valid transaction id`,
         });
       }
       const t = await transactions.findOne({ _id: id });
       if (!t) {
         return res.status(400).json({
-          message: `${id} is not a valid transaction id`,
+          error: `${id} is not a valid transaction id`,
         });
       }
     }

@@ -14,11 +14,6 @@ import { isValidEmail } from "./utils.js";
  */
 export const getUsers = async (req, res) => {
   try {
-    const cookie = req.cookies;
-    if (!cookie.accessToken) {
-      return res.status(401).json({ error: "Unauthorized" }); // unauthorized
-    }
-
     // check if the authenticated user is admin
     const isAdmin = verifyAuth(req, res, { authType: "Admin" });
 
@@ -26,26 +21,10 @@ export const getUsers = async (req, res) => {
       return res.status(401).json({ error: isAdmin.cause }); // unauthorized
     }
 
-    const users = await User.find({}, "username email role -_id").then(
-      (users) => {
-        // Check if any users are found
-        if (users.length === 0) {
-          return []; // Return an empty array if there are no users
-        }
-
-        // Return the array of users
-        return users;
-      }
-    );
-
-    res
-      .status(200)
-      .json({
-        data: users,
-        refreshedTokenMessage: res.locals.refreshedTokenMessage,
-      });
+    const users = await User.find({}, 'username email role -_id')
+    return res.status(200).json({data: users, refreshedTokenMessage: res.locals.refreshedTokenMessage});
   } catch (error) {
-    res.status(500).json(error.message);
+    res.status(500).json({ error: error.message });
   }
 };
 
@@ -210,7 +189,7 @@ export const getGroups = async (req, res) => {
     // verify auth using utils function
     const Admin = verifyAuth(req, res, { authType: "Admin" });
     if (!Admin || !Admin.authorized){
-      return res.status(401).json({ message: "Unauthorized" });
+      return res.status(401).json({ error: "Unauthorized" });
     }
     const groups = await Group.find().populate('members.user', 'email');
     const data = groups.map(group => {
@@ -533,70 +512,62 @@ export const removeFromGroup = async (req, res) => {
  */
 export const deleteUser = async (req, res) => {
   try {
-    const cookie = req.cookies;
-    if (!cookie.accessToken || !cookie.refreshToken) {
-      return res.status(401).json({ error: "Unauthorized" }); // unauthorized
-    }
-
     // check if authenticated user is admin
-    const isAdmin = verifyAuth(req, res, { authType: "Admin" });
-    if (!isAdmin.authorized) {
-      return res.status(401).json({ message: isAdmin.cause }); // unauthorized
+    const isAdmin = verifyAuth(req, res, {authType:"Admin"})
+    if(!isAdmin.authorized){
+      return res.status(401).json({ error: isAdmin.cause }); // unauthorized
     }
 
     const { email } = req.body;
 
     // check if the request body does contain all the necessary attributes
-    if (email === undefined) {
-      return res.status(400).json({ error: "email is missing" });
+    if (!email) {
+      return res.status(400).json({ error: "Email is missing" });
     }
-
+  
     // check if the email passed in the request body is an empty string
     if (email.trim() === "") {
-      return res.status(400).json({ error: "email cannot be empty" });
+      return res.status(400).json({ error: "Email cannot be empty" });
     }
 
     // check if the email passed in the request body is in correct email format
-    if (!isValidEmail(email)) {
-      return res.status(400).json({ error: "email is not in correct form" });
+    if(!isValidEmail(email)){
+      return res.status(400).json({ error: "Email is not in correct form" });
     }
 
     const deletedUser = await User.findOneAndDelete({ email: req.body.email });
 
     // check if the email passed in the request body does represent a user in the database
     if(!deletedUser){
-      return res.status(400).json({error: "email does not represent a user in the database"});
+      return res.status(400).json({ error: "Email does not represent a user in the database"});
     }
 
     // check if the user to delete is an Admin
     if(deletedUser.role == "Admin"){
-      return res.status(400).json({error: "user to delete cannot be admin"});
+      return res.status(400).json({ error: "User to be deleted cannot be admin"});
     }
 
     const userTransactions = await transactions.find({
-      username: deletedUser.username,
+        username: deletedUser.username
     });
 
-    const idList = userTransactions.map((transaction) => transaction._id);
+    const idList = userTransactions.map(transaction => transaction._id);
 
-    const deletedTransactions = await transactions.deleteMany({
-      _id: { $in: idList },
-    });
+    const deletedTransactions = await transactions.deleteMany({ _id: { $in: idList } });
 
-    const userGroup = await Group.findOne({ "members.email": email });
-    let deletedFromGroup = null;
-    if (!userGroup) {
-      deletedFromGroup = false;
-    } else {
-      if (userGroup.members.length == 1) {
-        await Group.deleteOne({ _id: userGroup._id });
-      } else {
-        await Group.updateOne(
-          { _id: userGroup._id },
-          { $pull: { members: { email: email } } }
-        );
+    const userGroup = await Group.findOne({ 'members.email': email });
+    let deletedFromGroup;
+    if (!userGroup){
+      deletedFromGroup = false
+    }
+    else{
+      if(userGroup.members.length==1){
+        await Group.deleteOne({ _id: userGroup._id })
       }
-      deletedFromGroup = true;
+      else{
+        await Group.updateOne({_id: userGroup._id}, {$pull: {members: {email: email}}});
+      }      
+      deletedFromGroup = true
     }
 
     return res
@@ -609,7 +580,7 @@ export const deleteUser = async (req, res) => {
         refreshedTokenMessage: res.locals.refreshedTokenMessage,
       });
   } catch (error) {
-    return res.status(500).json(error.message);
+    return res.status(500).json({ error: "Error" });
   }
 };
 

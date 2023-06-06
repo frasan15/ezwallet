@@ -484,7 +484,7 @@ describe("createTransaction", () => {
       params: {
         username: "Test",
       },
-      body: {},
+      body: { username: null, amount: null, type: null },
       cookies: {
         accessToken: "adminAccessTokenValid",
         refreshToken: "adminRefreshTokenValid",
@@ -498,26 +498,134 @@ describe("createTransaction", () => {
         refreshedTokenMessage: "",
       },
     };
-    const bodyArray = [
-      { username: null, amount: null, type: null },
-      { username: "Test", amount: "Twelve", type: "food" },
-      { username: "Invalid Username", amount: 12, type: "food" },
-      { username: "Test", amount: 12, type: "Invalid Type" },
-    ];
-    User.findOne.mockImplementation(() => {
-      return null;
+    User.findOne.mockResolvedValue({ username: "Test"});
+    await createTransaction(mockReq, mockRes);
+    expect(mockRes.status).toHaveBeenCalledWith(400);
+    expect(mockRes.json).toHaveBeenCalledWith({
+      error: "Bad request: missing parameters",
     });
-    categories.findOne.mockImplementation(() => {
-      return null;
+  });
+
+  test("should return 400 if any of the body params are empty strings", async () => {
+    verifyAuth.mockImplementation(() => {
+      return { authorized: true, cause: "Authorized" };
     });
-    for (let i = 0; i < bodyArray.length; i++) {
-      mockReq.body = bodyArray[i];
-      await createTransaction(mockReq, mockRes);
-      expect(mockRes.status).toHaveBeenCalledWith(400);
-      expect(mockRes.json).toHaveBeenCalledWith({
-        error: expect.any(String),
-      });
-    }
+    const mockReq = {
+      params: {
+        username: "Test",
+      },
+      body: { username: "", amount: 12, type: "" },
+      cookies: {
+        accessToken: "adminAccessTokenValid",
+        refreshToken: "adminRefreshTokenValid",
+      },
+      url: "/users/username/transactions",
+    };
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshedTokenMessage: "",
+      },
+    };
+    User.findOne.mockResolvedValue({ username: "Test"});
+    await createTransaction(mockReq, mockRes);
+    expect(mockRes.status).toHaveBeenCalledWith(400);
+    expect(mockRes.json).toHaveBeenCalledWith({
+      error: "Bad request: empty string is not a valid parameter",
+    });
+  });
+
+  test("should return 400 if the amount is not a number", async () => {
+    verifyAuth.mockImplementation(() => {
+      return { authorized: true, cause: "Authorized" };
+    });
+    const mockReq = {
+      params: {
+        username: "Test",
+      },
+      body: { username: "Test", amount: "12", type: "Test" },
+      cookies: {
+        accessToken: "adminAccessTokenValid",
+        refreshToken: "adminRefreshTokenValid",
+      },
+      url: "/users/username/transactions",
+    };
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshedTokenMessage: "",
+      },
+    };
+    User.findOne.mockResolvedValue({ username: "Test"});
+    await createTransaction(mockReq, mockRes);
+    expect(mockRes.status).toHaveBeenCalledWith(400);
+    expect(mockRes.json).toHaveBeenCalledWith({
+      error: "Amount must be a number",
+    });
+  });
+
+  test("should return 400 if user in transaction does not exist", async () => {
+    verifyAuth.mockImplementation(() => {
+      return { authorized: true, cause: "Authorized" };
+    });
+    const mockReq = {
+      params: {
+        username: "Test",
+      },
+      body: { username: "Test", amount: 12, type: "Test" },
+      cookies: {
+        accessToken: "adminAccessTokenValid",
+        refreshToken: "adminRefreshTokenValid",
+      },
+      url: "/users/username/transactions",
+    };
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshedTokenMessage: "",
+      },
+    };
+    User.findOne = jest.fn().mockResolvedValueOnce({ username: "Test"});
+    User.findOne = jest.fn().mockResolvedValueOnce(null);
+    await createTransaction(mockReq, mockRes);
+    expect(mockRes.status).toHaveBeenCalledWith(400);
+    expect(mockRes.json).toHaveBeenCalledWith({
+      error: "Username in transaction does not exist",
+    });
+  });
+
+  test("should return 400 if category in transaction does not exist", async () => {
+    verifyAuth.mockImplementation(() => {
+      return { authorized: true, cause: "Authorized" };
+    });
+    const mockReq = {
+      params: {
+        username: "Test",
+      },
+      body: { username: "Test", amount: 12, type: "Test" },
+      cookies: {
+        accessToken: "adminAccessTokenValid",
+        refreshToken: "adminRefreshTokenValid",
+      },
+      url: "/users/username/transactions",
+    };
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshedTokenMessage: "",
+      },
+    };
+    User.findOne = jest.fn().mockResolvedValue({ username: "Test"});
+    categories.findOne = jest.fn().mockResolvedValue(null);
+    await createTransaction(mockReq, mockRes);
+    expect(mockRes.status).toHaveBeenCalledWith(400);
+    expect(mockRes.json).toHaveBeenCalledWith({
+      error: "Category does not exist",
+    });
   });
 
   test("should return 200 if the transaction is created successfully", async () => {
@@ -650,6 +758,37 @@ describe("getAllTransactions", () => {
         }),
       ])
     );
+  });
+  
+  test("should return 200 with an array with empty transactions array", async () => {
+    verifyAuth.mockImplementation(() => {
+      return { authorized: true, cause: "Authorized" };
+    });
+    const mockReq = {
+      params: {
+        username: "Admin",
+      },
+      body: {},
+      cookies: {
+        accessToken: "adminAccessTokenValid",
+        refreshToken: "adminRefreshTokenValid",
+      },
+      url: "/api/transactions",
+    };
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshedTokenMessage: "",
+      },
+    };
+    transactions.aggregate.mockImplementation(() => {
+      return [];
+    });
+    await getAllTransactions(mockReq, mockRes);
+
+    expect(mockRes.status).toHaveBeenCalledWith(200);
+    expect(mockRes.json).toHaveBeenCalledWith(expect.arrayContaining([]));
   });
 });
 

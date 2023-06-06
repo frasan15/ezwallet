@@ -249,7 +249,7 @@ export const createTransaction = async (req, res) => {
     const shouldReturn = await searchUserAndCheckAdmin(req, res, false);
     if (shouldReturn) return;
     const { username, amount, type } = req.body;
-    if (!username || !amount || !type) {
+    if (username == null || amount == null || type == null) {
       return res.status(400).json({
         error: "Bad request: missing parameters",
       });
@@ -318,7 +318,7 @@ export const getAllTransactions = async (req, res) => {
       { $unwind: "$categories_info" },
     ]);
     if (allTransactions.length == 0)
-      return res.json({
+      return res.status(200).json({
         data: [],
         message: "No transactions found",
       });
@@ -356,15 +356,6 @@ const searchUserAndCheckAdmin = async (req, res, isAdminRoute) => {
   if (!isAdminRoute && !isSameUser.authorized) {
     res.status(401).json({ error: isSameUser.cause });
     return true;
-  }
-  if (req.params.username) {
-    const user = await User.findOne({ username: req.params.username });
-    if (!user) {
-      res.status(400).json({
-        error: "User not found",
-      });
-      return true;
-    }
   }
   return false;
 };

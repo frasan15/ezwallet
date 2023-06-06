@@ -244,6 +244,25 @@ describe("getAllTransactions", () => {
       );
     }
   });
+
+  test("should return 200 with an array with all transactions", async () => {
+    await User.create({
+      username: "tester",
+      email: "tester@test.com",
+      password: "tester",
+      role: "Admin",
+      refreshToken: adminAccessTokenValid,
+    });
+    const response = await request(app)
+      .get("/api/transactions")
+      .set(
+        "Cookie",
+        `accessToken=${adminAccessTokenValid}; refreshToken=${adminAccessTokenValid}`
+      )
+      .send();
+    expect(response.status).toBe(200);
+    expect(response.body.data).toEqual([]);
+  });
 });
 
 describe("getTransactionsByUser", () => { 

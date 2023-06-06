@@ -2,13 +2,17 @@ import request from 'supertest';
 import { app } from '../app';
 import { User } from '../models/User.js';
 import { Group } from '../models/User.js';
-import { createGroup, getGroups, getGroup, addToGroup } from '../controllers/users';
-import { verifyAuth } from '../controllers/utils';
+import {
+  createGroup,
+  getGroups,
+  getGroup,
+  addToGroup,
+  deleteUser,
+  getUsers,
+} from "../controllers/users";
+import { isValidEmail, verifyAuth } from "../controllers/utils";
 import jwt from "jsonwebtoken";
-import { isValidEmail } from '../controllers/utils';
-import { ObjectId } from 'mongoose';
-import mongoose from 'mongoose';
-import { Mongoose } from 'mongoose';
+import { transactions } from "../models/model";
 
 /**
  * In order to correctly mock the calls to external modules it is necessary to mock them using the following line.
@@ -20,12 +24,23 @@ jest.mock("bcryptjs")
 jest.mock("jsonwebtoken")
 jest.mock("../models/User.js")
 jest.mock('../models/model.js');
+jest.mock("../controllers/utils.js", () => ({
+  verifyAuth: jest.fn(),
+  isValidEmail: jest.fn(),
+}));
+/*
+const userOne = {email: "user@test.com", username: "frasan", role: "Admin"}
 
-/**
- * Defines code to be executed before each test case is launched
- * In this case the mock implementation of `User.find()` is cleared, allowing the definition of a new mock implementation.
- * Not doing this `mockClear()` means that test cases may use a mock implementation intended for other test cases.
- */
+const accessToken = ""
+const refreshToken = ""
+userOne.refreshToken = jwt.sign({
+  email: userOne.email,
+  id: userOneId.toString(),
+  username: userOne.username,
+  role: userOne.role
+}, process.env.ACCESS_KEY, { expiresIn: '7d' });
+*/
+
 beforeEach(() => {
   User.find.mockClear();
   User.findOne.mockClear();
@@ -35,7 +50,7 @@ beforeEach(() => {
   Group.findOne.mockClear();
   Group.deleteOne.mockClear();
   Group.prototype.save.mockClear();
-  
+  User.findOneAndDelete.mockClear();
   jest.clearAllMocks();
 });
 
@@ -47,7 +62,85 @@ jest.mock('../controllers/utils.js', () => ({
 
 describe("getUsers", () => {})
 
-describe("getUser", () => { })
+describe("getUsers", () => {
+  test("should return empty list if there are no users", async () => {
+    //any time the `User.find()` method is called jest will replace its actual implementation with the one defined below
+    jest.spyOn(User, "find").mockImplementation(() => []);
+    verifyAuth.mockImplementation(() => {
+      return { authorized: true, cause: "Authorized" };
+    });
+    const response = await request(app).get("/api/users");
+
+    expect(response.status).toBe(200);
+    expect(response.body.data).toEqual([]);
+  });
+
+  test("should retrieve list of all users", async () => {
+    const retrievedUsers = [
+      {
+        username: "test1",
+        email: "test1@example.com",
+        password: "hashedPassword1",
+      },
+      {
+        username: "test2",
+        email: "test2@example.com",
+        password: "hashedPassword2",
+      },
+    ];
+    verifyAuth.mockImplementation(() => {
+      return { authorized: true, cause: "Authorized" };
+    });
+    jest.spyOn(User, "find").mockImplementation(() => retrievedUsers);
+    const mockReq = {
+      params: {},
+      body: {},
+      cookies: {
+        accessToken: "adminAccessTokenValid",
+        refreshToken: "adminRefreshTokenValid",
+      },
+      url: "/api/users",
+    };
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshedTokenMessage: "",
+      },
+    };
+    await getUsers(mockReq, mockRes);
+
+    expect(mockRes.status).toHaveBeenCalledWith(200);
+    expect(mockRes.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.arrayContaining(retrievedUsers),
+      })
+    );
+  });
+
+  test("should return 401 if user is not authorized", async () => {
+    verifyAuth.mockImplementation(() => {
+      return { authorized: false, cause: "Not authorized" };
+    });
+    const mockReq = {
+      params: {},
+      body: {},
+      cookies: {
+        accessToken: "adminAccessTokenValid",
+        refreshToken: "adminRefreshTokenValid",
+      },
+      url: "/api/users",
+    };
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshedTokenMessage: "",
+      },
+    };
+    await getUsers(mockReq, mockRes);
+  });
+});
 
 describe("createGroup", () => {
   test.only('creation of the group successfully completed when the email of the user who calls the API is not inside the array', async () => {
@@ -549,56 +642,56 @@ describe("getGroup", () => {
     expect(mockRes.json).toHaveBeenCalledWith({data: groups, refreshedTokenMessage: ""})
     })
 
-    test.only("Returns a 400 error if the group name passed as a route parameter does not represent a group in the database", async () => {
-      const mockReq = {
-        body: {},
-        params: {name: "group20"},
-        cookies: {accessToken: "validAccessToken", refreshToken: "validRefreshToken"},
-        url: "/api/groups/:name"
-      }
-  
-      const mockRes = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn(),
-        locals: {
-          refreshedTokenMessage: ""
-        }
-      }
-  
-      verifyAuth.mockImplementation(() => ({authorized: true, cause: "Authorized"}))
-  
-      Group.findOne = jest.fn().mockResolvedValue(null)
-      await getGroup(mockReq, mockRes);
-  
-      expect(mockRes.status).toHaveBeenCalledWith(400)
-      })
+  test.only("Returns a 400 error if the group name passed as a route parameter does not represent a group in the database", async () => {
+    const mockReq = {
+      body: {},
+      params: {name: "group20"},
+      cookies: {accessToken: "validAccessToken", refreshToken: "validRefreshToken"},
+      url: "/api/groups/:name"
+    }
 
-      test.only("Returns a 401 error if called by an authenticated user who is neither part of the group (authType = Group) nor an admin (authType = Admin)", async () => {
-        const mockReq = {
-          body: {},
-          params: {name: "group20"},
-          cookies: {accessToken: "invalidAccessToken", refreshToken: "invalidRefreshToken"},
-          url: "/api/groups/:name"
-        }
-    
-        const mockRes = {
-          status: jest.fn().mockReturnThis(),
-          json: jest.fn(),
-          locals: {
-            refreshedTokenMessage: ""
-          }
-        }
-    
-        verifyAuth.mockImplementation(() => ({authorized: false, cause: "Unauthorized"}))
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshedTokenMessage: ""
+      }
+    }
 
-        const groups = [{name: "Family", members: [{email: "mario.red@email.com"},
-                        {email: "luigi.red@email.com"}]}];
-    
-        Group.findOne = jest.fn().mockResolvedValue(groups)
-        await getGroup(mockReq, mockRes);
-    
-        expect(mockRes.status).toHaveBeenCalledWith(401)
-        })
+    verifyAuth.mockImplementation(() => ({authorized: true, cause: "Authorized"}))
+
+    Group.findOne = jest.fn().mockResolvedValue(null)
+    await getGroup(mockReq, mockRes);
+
+    expect(mockRes.status).toHaveBeenCalledWith(400)
+    })
+
+  test.only("Returns a 401 error if called by an authenticated user who is neither part of the group (authType = Group) nor an admin (authType = Admin)", async () => {
+    const mockReq = {
+      body: {},
+      params: {name: "group20"},
+      cookies: {accessToken: "invalidAccessToken", refreshToken: "invalidRefreshToken"},
+      url: "/api/groups/:name"
+    }
+
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshedTokenMessage: ""
+      }
+    }
+
+    verifyAuth.mockImplementation(() => ({authorized: false, cause: "Unauthorized"}))
+
+    const groups = [{name: "Family", members: [{email: "mario.red@email.com"},
+                    {email: "luigi.red@email.com"}]}];
+
+    Group.findOne = jest.fn().mockResolvedValue(groups)
+    await getGroup(mockReq, mockRes);
+
+    expect(mockRes.status).toHaveBeenCalledWith(401)
+    })
 
  })
 
@@ -795,8 +888,198 @@ describe("addToGroup", () => {
     })
  })
 
-describe("removeFromGroup", () => { })
+describe("removeFromGroup", () => {});
 
-describe("deleteUser", () => { })
+describe("deleteUser", () => {
+  test("should return 401 if user is not authorized", async () => {
+    verifyAuth.mockImplementation(() => {
+      return { authorized: false, cause: "Not authorized" };
+    });
+    const mockReq = {
+      params: {},
+      body: {},
+      cookies: {
+        accessToken: "adminAccessTokenValid",
+        refreshToken: "adminRefreshTokenValid",
+      },
+      url: "/api/users",
+    };
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshedTokenMessage: "",
+      },
+    };
+    await deleteUser(mockReq, mockRes);
 
-describe("deleteGroup", () => { })
+    expect(mockRes.status).toHaveBeenCalledWith(401);
+    expect(mockRes.json).toHaveBeenCalledWith({ error: expect.any(String) });
+  });
+
+  test("should return 400 if email is missing, empty or invalid", async () => {
+    verifyAuth.mockImplementation(() => {
+      return { authorized: true, cause: "Authorized" };
+    });
+    const wrongEmails = [
+      null,
+      "",
+      "test",
+      "test@",
+      "test@example",
+      "test@example.",
+    ];
+    const mockReq = {
+      params: {},
+      body: {
+        email: "test@",
+      },
+      cookies: {
+        accessToken: "adminAccessTokenValid",
+        refreshToken: "adminRefreshTokenValid",
+      },
+      url: "/api/users",
+    };
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshedTokenMessage: "",
+      },
+    };
+
+    for (let i = 0; i < wrongEmails.length; i++) {
+      mockReq.body.email = wrongEmails[i];
+      await deleteUser(mockReq, mockRes);
+
+      expect(mockRes.status).toHaveBeenCalledWith(400);
+      expect(mockRes.json).toHaveBeenCalledWith({
+        error: expect.any(String),
+      });
+    }
+  });
+
+  test("should return 400 if user does not exist in database", async () => {
+    verifyAuth.mockImplementation(() => {
+      return { authorized: true, cause: "Authorized" };
+    });
+    const mockReq = {
+      params: {},
+      body: {
+        email: "test@test.com",
+      },
+      cookies: {
+        accessToken: "adminAccessTokenValid",
+        refreshToken: "adminRefreshTokenValid",
+      },
+      url: "/api/users",
+    };
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshedTokenMessage: "",
+      },
+    };
+    jest.spyOn(User, "findOneAndDelete").mockImplementation(() => {
+      return undefined;
+    });
+    isValidEmail.mockImplementation(() => {
+      return true;
+    });
+    await deleteUser(mockReq, mockRes);
+
+    expect(mockRes.status).toHaveBeenCalledWith(400);
+    expect(mockRes.json).toHaveBeenCalledWith({
+      error: "Email does not represent a user in the database",
+    });
+  });
+
+  test("should return 400 if user is an admin", async () => {
+    verifyAuth.mockImplementation(() => {
+      return { authorized: true, cause: "Authorized" };
+    });
+    const mockReq = {
+      params: {},
+      body: {
+        email: "test@test.com",
+      },
+      cookies: {
+        accessToken: "adminAccessTokenValid",
+        refreshToken: "adminRefreshTokenValid",
+      },
+      url: "/api/users",
+    };
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshedTokenMessage: "",
+      },
+    };
+    jest.spyOn(User, "findOneAndDelete").mockImplementation(() => {
+      return { role: "Admin" };
+    });
+    isValidEmail.mockImplementation(() => {
+      return true;
+    });
+    await deleteUser(mockReq, mockRes);
+    expect(mockRes.status).toHaveBeenCalledWith(400);
+    expect(mockRes.json).toHaveBeenCalledWith({
+      error: "User to be deleted cannot be admin",
+    });
+  });
+
+  test("should return 200 if user and his transactions are deleted, with one user in a group", async () => {
+    verifyAuth.mockImplementation(() => {
+      return { authorized: true, cause: "Authorized" };
+    });
+    const mockReq = {
+      params: {},
+      body: {
+        email: "test@test.com",
+      },
+      cookies: {
+        accessToken: "adminAccessTokenValid",
+        refreshToken: "adminRefreshTokenValid",
+      },
+      url: "/api/users",
+    };
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshedTokenMessage: "",
+      },
+    };
+    isValidEmail.mockImplementation(() => {
+      return true;
+    });
+    User.findOneAndDelete.mockImplementation(() => {
+      return { role: "User" };
+    });
+    transactions.find.mockImplementation(() => {
+      return [{ _id: "1" }];
+    });
+    transactions.deleteMany.mockImplementation(() => {
+      return { deletedCount: 1 };
+    });
+    Group.findOne.mockImplementation(() => {
+      return { members: ["1"] };
+    });
+    Group.deleteOne.mockImplementation(() => {});
+
+    await deleteUser(mockReq, mockRes);
+
+    expect(mockRes.status).toHaveBeenCalledWith(200);
+    expect(mockRes.json).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        deletedFromGroup: expect.any(Boolean),
+        deletedTransaction: expect.any(Number),
+      }),
+      refreshedTokenMessage: expect.any(String),
+    });
+  });
+});
+
+describe("deleteGroup", () => {});

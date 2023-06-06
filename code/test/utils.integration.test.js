@@ -5,7 +5,7 @@ import {
 } from "../controllers/utils";
 
 describe("handleDateFilterParams", () => {
-  test(`Returns a filter object which contains data attribute if only "date" is present in query`, () => {
+  test.only(`Returns a filter object which contains data attribute if only "date" is present in query`, () => {
     const req = { query: { date: "2023-04-21" } };
     const res = handleDateFilterParams(req);
     //The response object should be: {date: {$gte: 2023-04-21T00:00:00.000Z, $lte: 2023-04-21T23:59:59.999Z}}
@@ -23,7 +23,7 @@ describe("handleDateFilterParams", () => {
     );
   });
 
-  test(`Throws an error if at least one of the query parameters is not a date in the format "YYYY-MM-DD"`, () => {
+  test.only(`Throws an error if at least one of the query parameters is not a date in the format "YYYY-MM-DD"`, () => {
     //The date is in the correct format but is not an actual date (there are only twelve months)
     const req1 = { query: { date: "2023-13-21" } };
     //The date is valid but is not in the correct formant
@@ -32,7 +32,7 @@ describe("handleDateFilterParams", () => {
     expect(() => handleDateFilterParams(req2)).toThrow();
   });
 
-  test(`Throws an error if in the query "date" parameter is present with either "from" or "upTo"`, () => {
+  test.only(`Throws an error if in the query "date" parameter is present with either "from" or "upTo"`, () => {
     const req1 = { query: { date: "2023-07-21", upTo: "2023-09-29" } };
     const req2 = { query: { date: "2023-07-21", from: "2023-09-29" } };
     const req3 = {
@@ -45,13 +45,13 @@ describe("handleDateFilterParams", () => {
 });
 
 describe("verifyAuth", () => {
-  test("Dummy test, change it", () => {
+  test.only("Dummy test, change it", () => {
     expect(true).toBe(true);
   });
 });
 
 describe("handleAmountFilterParams", () => {
-  test("Function called with either min and/or max should return a filter object with mix and/or max attributes", () => {
+  test.only("Function called with either min and/or max should return a filter object with mix and/or max attributes", () => {
     const reqs = [
       { query: { min: "10" } },
       { query: { max: "10" } },
@@ -71,7 +71,7 @@ describe("handleAmountFilterParams", () => {
     }
   });
 
-  test("Should throw an error if min or max are passed with strings that do cannot be parsed as number", () => {
+  test.only("Should throw an error if min or max are passed with strings that do cannot be parsed as number", () => {
     // null and undefined are ignored by the function
     const req1 = { query: { min: "invalid" } };
     const req2 = { query: { max: "invalid" } };

@@ -638,20 +638,18 @@ export const deleteGroup = async (req, res) => {
     if (!name) {
       return res.status(400).json({ error: "missing parameters" });
     }
-    if (typeof name !== "string") {
-      return res.status(400).json({ error: "invalid name" });
-    }
     if (name.trim() === "") {
       return res
         .status(400)
         .json({ error: "empty string is not a valid group" });
     }
-    const group = await Group.deleteOne({ name: name });
-    if (group.deletedCount === 0) {
+    const group = await Group.findOne({ name: name });
+    if (!group) {
       return res.status(400).json({ error: "the group does not exist" });
     }
+    await Group.deleteOne({name: name});
 
-    return res.json({
+    return res.status(200).json({
       data: { error: "the group has been correctly deleted" },
     });
   } catch (err) {

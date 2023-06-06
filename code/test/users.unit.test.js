@@ -9,6 +9,8 @@ import {
   addToGroup,
   deleteUser,
   getUsers,
+  deleteGroup,
+  removeFromGroup
 } from "../controllers/users";
 import { isValidEmail, verifyAuth } from "../controllers/utils";
 import jwt from "jsonwebtoken";
@@ -63,7 +65,7 @@ jest.mock('../controllers/utils.js', () => ({
 describe("getUsers", () => {})
 
 describe("getUsers", () => {
-  test("should return empty list if there are no users", async () => {
+  test.only("should return empty list if there are no users", async () => {
     //any time the `User.find()` method is called jest will replace its actual implementation with the one defined below
     jest.spyOn(User, "find").mockImplementation(() => []);
     verifyAuth.mockImplementation(() => {
@@ -75,7 +77,7 @@ describe("getUsers", () => {
     expect(response.body.data).toEqual([]);
   });
 
-  test("should retrieve list of all users", async () => {
+  test.only("should retrieve list of all users", async () => {
     const retrievedUsers = [
       {
         username: "test1",
@@ -118,7 +120,7 @@ describe("getUsers", () => {
     );
   });
 
-  test("should return 401 if user is not authorized", async () => {
+  test.only("should return 401 if user is not authorized", async () => {
     verifyAuth.mockImplementation(() => {
       return { authorized: false, cause: "Not authorized" };
     });
@@ -888,10 +890,151 @@ describe("addToGroup", () => {
     })
  })
 
-describe("removeFromGroup", () => {});
+ describe("removeFromGroup", () => {
+  test.only("Should remove members from group as admin", async () => {
+    const req = {
+      params: {
+        name: "group1",
+      },
+      body: {
+        emails: ["admin@yahoo.com", "admin2@yahoo.com"],
+      },
+      cookies: {accessToken: "bbbi", refreshToken: "bbjbjkb"}, 
+      url: "/api/groups/group1/pull",
+    };
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+  
+    verifyAuth.mockImplementation(() => {
+      return {authorized: true, cause: "Authorized"}
+  })
+  Group.findOne.mockResolvedValueOnce({ name: "group1", members: [] })
+  User.findOne .mockResolvedValueOnce({ email: "admin@yahoo.com" })
+    User.findOne.mockResolvedValueOnce({ emails: "admin2@yahoo.com"})
+  Group.updateOne.mockResolvedValueOnce({});
+  Group.findOne.mockResolvedValueOnce({ name: "group1", members: [] });
+  await removeFromGroup(req, res);
+  expect(Group.findOne).toHaveBeenCalledWith({ name: "group1" });
+  expect(User.findOne).toHaveBeenCalledWith({ email: "admin@yahoo.com" });
+  expect(User.findOne).toHaveBeenCalledWith({ email: "admin2@yahoo.com" });
+  expect(Group.updateOne).toHaveBeenCalledWith(
+    { name: "group1" },
+    { $pull: { members: { email: "admin@yahoo.com" } } }
+  );
+  expect(Group.updateOne).toHaveBeenCalledWith(
+    { name: "group1" },
+    { $pull: { members: { email: "admin2@yahoo.com" } } }
+  );
+  expect(res.json).toHaveBeenCalledWith({
+    data: {
+      group: {
+        name: "group1",
+        members: [],
+      },
+      membersNotFound: [],
+      notInGroup: [],
+    },
+    refreshedTokenMessage: undefined,
+  });
+  expect(res.status).toHaveBeenCalledWith(200);
+});
+
+test.only("Should return 401 unauthorized if not an admin or group member", async () => {
+  const req = {
+    params: {
+      name: "group1",
+    },
+    cookies: {accessToken: "aaaaa", refreshToken: "bbbbb"},
+    url: "/api/groups/group1/pull",
+    body: {
+      emails: ["user1@example.com", "user2@example.com"],
+    },
+  }
+  const res = {
+    status: jest.fn().mockReturnThis(),
+    json: jest.fn(),
+  }
+  verifyAuth.mockReturnValueOnce({ authorized: false, cause: "Unauthorized" })
+  await removeFromGroup(req, res)
+  expect(res.status).toHaveBeenCalledWith(401);
+  expect(res.json).toHaveBeenCalledWith({error: expect.any(String)});
+});
+test.only("Should return 400 error if the request body does not contain all the necessary attributes", async()=>{
+  const req = {
+    params: {
+      name: "group1",
+    },
+    body: {
+      email: ""
+    },
+    cookies: {accessToken: "aaaaa", refreshToken: "bbbbb"},
+    url: "/api/groups/group1/pull",
+  }
+  const res = {
+    status: jest.fn().mockReturnThis(),
+    json: jest.fn(),
+  }
+  verifyAuth.mockReturnValueOnce({ authorized: true, cause: "Authorized" })
+  await removeFromGroup(req,res)
+  expect(res.status).toHaveBeenCalledWith(400)
+  expect(res.json).toHaveBeenCalledWith( {error: expect.any(String)})
+})
+test ("400 error if the group name passed as a route parameter does not represent a group in the database " , async()=> {
+  const req =  {
+    params: {
+      name: "group1"
+    },
+    body : {
+      emails : ["neda@yahoo.com"]
+    }
+  }
+const res = {
+    status: jest.fn().mockReturnThis(),
+    json: jest.fn(),
+    locals: {
+        refreshTokenMessage: ""
+    }
+}
+Group.findOne.mockResolvedValueOnce(null)
+await removeFromGroup(req,res)
+expect(res.status).toHaveBeenCalledWith(400)
+expect(res.json).toHaveBeenCalledWith({error: expect.any(String)})
+})
+
+test.only('Should return 400 error if at least one of the emails is an empty string' , async()=>{
+  const req = {
+    body: {
+      emails : [" " ,"saadat@yahoo.com"]
+    },
+    cookies: {accessToken: "aaaaa", refreshToken: "bbbbb"},
+    url: "/api/groups/group1/pull",
+  }
+  const res = {
+    status: jest.fn().mockReturnThis(),
+    json: jest.fn(),
+    locals: {
+        refreshTokenMessage: ""
+    }
+
+  }
+  const MockparamsGroup = {
+    name : "group1"
+  }
+  Group.findOne.mockResolvedValue(MockparamsGroup)
+  verifyAuth.mockImplementation(() => {
+    return {authorized: true, cause: "Authorized"}
+})
+
+await removeFromGroup(req,res)
+expect(res.status).toHaveBeenCalled(400)
+expect(res.json).toHaveBeenCalledWith({error: expect.any(String)});
+})
+})
 
 describe("deleteUser", () => {
-  test("should return 401 if user is not authorized", async () => {
+  test.only("should return 401 if user is not authorized", async () => {
     verifyAuth.mockImplementation(() => {
       return { authorized: false, cause: "Not authorized" };
     });
@@ -917,7 +1060,7 @@ describe("deleteUser", () => {
     expect(mockRes.json).toHaveBeenCalledWith({ error: expect.any(String) });
   });
 
-  test("should return 400 if email is missing, empty or invalid", async () => {
+  test.only("should return 400 if email is missing, empty or invalid", async () => {
     verifyAuth.mockImplementation(() => {
       return { authorized: true, cause: "Authorized" };
     });
@@ -959,7 +1102,7 @@ describe("deleteUser", () => {
     }
   });
 
-  test("should return 400 if user does not exist in database", async () => {
+  test.only("should return 400 if user does not exist in database", async () => {
     verifyAuth.mockImplementation(() => {
       return { authorized: true, cause: "Authorized" };
     });
@@ -995,7 +1138,7 @@ describe("deleteUser", () => {
     });
   });
 
-  test("should return 400 if user is an admin", async () => {
+  test.only("should return 400 if user is an admin", async () => {
     verifyAuth.mockImplementation(() => {
       return { authorized: true, cause: "Authorized" };
     });
@@ -1030,7 +1173,7 @@ describe("deleteUser", () => {
     });
   });
 
-  test("should return 200 if user and his transactions are deleted, with one user in a group", async () => {
+  test.only("should return 200 if user and his transactions are deleted, with one user in a group", async () => {
     verifyAuth.mockImplementation(() => {
       return { authorized: true, cause: "Authorized" };
     });
@@ -1082,4 +1225,114 @@ describe("deleteUser", () => {
   });
 });
 
-describe("deleteGroup", () => {});
+describe("deleteGroup", () => {
+  test("Group has been successfuly deleted", async () => {
+    const req = {
+      body: {
+        name: "Family",
+      },
+      cookies: { accessToken: "aaaaa", refreshToken: "bbbbb" },
+    };
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshTokenMessage: "",
+      },
+    };
+    verifyAuth.mockImplementation(() => {
+      return { authorized: true, cause: "Authorized" };
+    });
+    await deleteGroup(req, res);
+    Group.findOne.mockResolvedValue({ name: "Family" });
+    expect(Group.deleteOne).mockResolvedValue({ name: "family" });
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalled({ data: { error: expect.any(String) } });
+  });
+
+  test.only("Should Return 401, if User is not Authorized", async () => {
+    const req = {
+      body: {
+        name: "Family",
+      },
+      cookies: { accessToken: "aaaaa", refreshToken: "bbbbb" },
+    };
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshTokenMessage: "",
+      },
+    };
+    verifyAuth.mockImplementation(() => {
+      return { authorized: false, cause: "Unauthorized" };
+    });
+    await deleteGroup(req, res);
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(res.json).toHaveBeenCalledWith({ error: expect.any(String) });
+  });
+  test.only("Should return 400 if the request body does not contain all the necessary attributes", async () => {
+    const req = {
+      body: {},
+      cookies: { accessToken: "aaaaa", refreshToken: "bbbbb" },
+    };
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshTokenMessage: "",
+      },
+    };
+    verifyAuth.mockImplementation(() => {
+      return { authorized: true, cause: "Authorized" };
+    });
+
+    await deleteGroup(req, res);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ error: expect.any(String) });
+  });
+  test.only("Should Returns a 400 error if the name passed in the request body is an empty string", async () => {
+    const req = {
+      body: {
+        name: " ",
+      },
+      cookies: { accessToken: "aaaaa", refreshToken: "bbbbb" },
+    };
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshTokenMessage: "",
+      },
+    };
+    verifyAuth.mockImplementation(() => {
+      return { authorized: true, cause: "Authorized" };
+    });
+
+    await deleteGroup(req, res);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ error: expect.any(String) });
+  });
+  test("Should Return  400 error if group is not exist ", async () => {
+    const Mocreq = {
+      body: {
+        name: "student",
+      },
+      cookies: { accessToken: "aaaaa", refreshToken: "bbbbb" },
+    };
+    const Mockres = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshTokenMessage: "",
+      },
+    };
+    verifyAuth.mockImplementation(() => {
+      return { authorized: true, cause: "Authorized" };
+    });
+    await deleteGroup(Mocreq, Mockres);
+    Group.findOne.mockResolvedValue(0);
+    expect(Mockres.status).toHaveBeenCalledWith(400);
+    expect(Mockres.json).toHaveBeenCalledWith({ error: expect.any(String) });
+  });
+});

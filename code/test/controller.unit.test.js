@@ -602,7 +602,7 @@ describe("createTransaction", () => {
     await createTransaction(mockReq, mockRes);
     expect(mockRes.status).toHaveBeenCalledWith(400);
     expect(mockRes.json).toHaveBeenCalledWith({
-      error: "Username in transaction does not exist",
+      error: "User not found",
     });
   });
 

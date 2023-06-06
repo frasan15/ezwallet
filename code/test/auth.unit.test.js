@@ -1,7 +1,7 @@
 import request from 'supertest';
 import { app } from '../app';
 import { User } from '../models/User.js';
-import { login } from '../controllers/auth';
+import { login, register, registerAdmin } from '../controllers/auth';
 import jwt from "jsonwebtoken";
 const bcrypt = require("bcryptjs")
 
@@ -18,17 +18,304 @@ jest.mock("bcryptjs")
 jest.mock('../models/User.js');
 jest.mock("jsonwebtoken")
 
-describe('register', () => { 
-    test('Dummy test, change it', () => {
-        expect(true).toBe(true);
+describe("register", () => {
+  test.only("Should return 400 if request body does not contain all the necessary attributes", async () => {
+    const mockReq = {
+      body: { username: "Mario", password: "securePass" },
+      url: "/api/register",
+      cookies: "",
+    };
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      cookie: jest.fn(),
+    };
+    await register(mockReq, mockRes);
+    expect(mockRes.status).toHaveBeenCalledWith(400);
+    expect(mockRes.json).toHaveBeenCalledWith({ error: "Missing attributes" });
+  });
+
+  test.only("Should return 400 if at least one of the parameters in the request body is an empty string", async () => {
+    const mockReq = {
+      body: { username: "Mario", email: "", password: "securePass" },
+      url: "/api/register",
+      cookies: "",
+    };
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      cookie: jest.fn(),
+    };
+    await register(mockReq, mockRes);
+    expect(mockRes.status).toHaveBeenCalledWith(400);
+    expect(mockRes.json).toHaveBeenCalledWith({ error: "Empty attributes" });
+  });
+
+  test.only("Should return 400 if the email in the request body is not in a valid email format", async () => {
+    const mockReq = {
+      body: { username: "Mario", email: "notAnEmail", password: "securePass" },
+      url: "/api/register",
+      cookies: "",
+    };
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      cookie: jest.fn(),
+    };
+    await register(mockReq, mockRes);
+    expect(mockRes.status).toHaveBeenCalledWith(400);
+    expect(mockRes.json).toHaveBeenCalledWith({
+      error: "Email is not valid",
     });
+  });
+
+  test.only("Should return 400 if the username in the request body identifies an already existing user", async () => {
+    const mockReq = {
+      body: {
+        username: "test",
+        email: "test@test.com",
+        password: "securePass",
+      },
+      url: "/api/register",
+      cookies: "",
+    };
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      cookie: jest.fn(),
+    };
+    User.findOne.mockImplementationOnce(() => {
+        return null;
+    });
+    User.findOne.mockImplementationOnce(() => {
+      return {
+        username: "test",
+        email: "test@test.com",
+      };
+    });
+    await register(mockReq, mockRes);
+    expect(mockRes.status).toHaveBeenCalledWith(400);
+    expect(mockRes.json).toHaveBeenCalledWith({
+      error: "Username is already registered",
+    });
+  });
+
+  test.only("Should return 400 if the email in the request body identifies an already existing user", async () => {
+    const mockReq = {
+        body: {
+          username: "test",
+          email: "test@test.com",
+          password: "securePass",
+        },
+        url: "/api/register",
+        cookies: "",
+      };
+      const mockRes = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+        cookie: jest.fn(),
+      };
+      User.findOne.mockImplementationOnce(() => {
+        return {
+          username: "test",
+          email: "test@test.com",
+        };
+      });
+      User.findOne.mockImplementationOnce(() => {
+        return null;
+      });
+      await register(mockReq, mockRes);
+      expect(mockRes.status).toHaveBeenCalledWith(400);
+      expect(mockRes.json).toHaveBeenCalledWith({
+        error: "Email is already registered",
+      });
+  });
+
+  test.only("Should return 200 if the user is added successfully", async () => {
+    const mockReq = {
+        body: {
+          username: "test",
+          email: "test@test.com",
+          password: "securePass",
+        },
+        url: "/api/register",
+        cookies: "",
+      };
+      const mockRes = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+        cookie: jest.fn(),
+      };
+      User.findOne.mockResolvedValue(null);
+      User.create.mockImplementation(() => {
+        return {
+          username: "test",
+          email: "test@test.com",
+        };
+      });
+      await register(mockReq, mockRes);
+      expect(mockRes.status).toHaveBeenCalledWith(200);
+      expect(mockRes.json).toHaveBeenCalledWith({
+        data: "user added succesfully",
+      });
+  });
 });
 
-describe("registerAdmin", () => { 
-    test('Dummy test, change it', () => {
-        expect(true).toBe(true);
+/**
+ * 
+- Request Parameters: None
+- Request Body Content: An object having attributes `username`, `email` and `password`
+  - Example: `{username: "admin", email: "admin@email.com", password: "securePass"}`
+- Response `data` Content: A message confirming successful insertion
+  - Example: `res.status(200).json({data: {message: "User added successfully"}})`
+- Returns a 400 error if the request body does not contain all the necessary attributes
+- Returns a 400 error if at least one of the parameters in the request body is an empty string
+- Returns a 400 error if the email in the request body is not in a valid email format
+- Returns a 400 error if the username in the request body identifies an already existing user
+- Returns a 400 error if the email in the request body identifies an already existing user
+ */
+describe("registerAdmin", () => {
+  test.only("Should return 400 if request body does not contain all the necessary attributes", async () => {
+    const mockReq = {
+      body: { username: "Mario", password: "securePass" },
+      url: "/api/admin",
+      cookies: "",
+    };
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      cookie: jest.fn(),
+    };
+    await registerAdmin(mockReq, mockRes);
+    expect(mockRes.status).toHaveBeenCalledWith(400);
+    expect(mockRes.json).toHaveBeenCalledWith({ error: "Missing attributes" });
+  });
+
+  test.only("Should return 400 if at least one of the parameters in the request body is an empty string", async () => {
+    const mockReq = {
+      body: { username: "Mario", email: "", password: "securePass" },
+      url: "/api/admin",
+      cookies: "",
+    };
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      cookie: jest.fn(),
+    };
+    await registerAdmin(mockReq, mockRes);
+    expect(mockRes.status).toHaveBeenCalledWith(400);
+    expect(mockRes.json).toHaveBeenCalledWith({ error: "Empty attributes" });
+  });
+
+  test.only("Should return 400 if the email in the request body is not in a valid email format", async () => {
+    const mockReq = {
+      body: { username: "Mario", email: "notAnEmail", password: "securePass" },
+      url: "/api/admin",
+      cookies: "",
+    };
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      cookie: jest.fn(),
+    };
+    await registerAdmin(mockReq, mockRes);
+    expect(mockRes.status).toHaveBeenCalledWith(400);
+    expect(mockRes.json).toHaveBeenCalledWith({
+      error: "Email is not valid",
     });
-})
+  });
+
+  test.only("Should return 400 if the username in the request body identifies an already existing user", async () => {
+    const mockReq = {
+      body: {
+        username: "test",
+        email: "test@test.com",
+        password: "securePass",
+      },
+      url: "/api/admin",
+      cookies: "",
+    };
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      cookie: jest.fn(),
+    };
+    User.findOne.mockImplementationOnce(() => {
+      return null;
+    });
+    User.findOne.mockImplementationOnce(() => {
+      return {
+        username: "test",
+        email: "test@test.com",
+      };
+    });
+    await registerAdmin(mockReq, mockRes);
+    expect(mockRes.status).toHaveBeenCalledWith(400);
+    expect(mockRes.json).toHaveBeenCalledWith({
+      error: "Username is already registered",
+    });
+  });
+
+  test.only("Should return 400 if the email in the request body identifies an already existing user", async () => {
+    const mockReq = {
+      body: {
+        username: "test",
+        email: "test@test.com",
+        password: "securePass",
+      },
+      url: "/api/admin",
+      cookies: "",
+    };
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      cookie: jest.fn(),
+    };
+    User.findOne.mockImplementationOnce(() => {
+      return {
+        username: "test",
+        email: "test@test.com",
+      };
+    });
+    User.findOne.mockImplementationOnce(() => {
+      return null;
+    });
+    await registerAdmin(mockReq, mockRes);
+    expect(mockRes.status).toHaveBeenCalledWith(400);
+    expect(mockRes.json).toHaveBeenCalledWith({
+      error: "Email is already registered",
+    });
+  });
+
+  test.only("Should return 200 if the user is added successfully", async () => {
+    const mockReq = {
+      body: {
+        username: "test",
+        email: "test@test.com",
+        password: "securePass",
+      },
+      url: "/api/admin",
+      cookies: "",
+    };
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      cookie: jest.fn(),
+    };
+    User.findOne.mockResolvedValue(null);
+    User.create.mockImplementation(() => {
+      return {
+        username: "test",
+        email: "test@test.com",
+      };
+    });
+    await registerAdmin(mockReq, mockRes);
+    expect(mockRes.status).toHaveBeenCalledWith(200);
+    expect(mockRes.json).toHaveBeenCalledWith({
+      data: "admin added succesfully",
+    });
+  });
+});
 
 describe('login', () => { 
     test('login performed successfully', async () => {

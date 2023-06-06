@@ -56,7 +56,7 @@ export const getUser = async (req, res) => {
       "username email role -_id"
     );
     if (!user) {
-      return res.status(401).json({ error: "User not found" });
+      return res.status(400).json({ error: "User not found" });
     }
     if (!userParam) {
       return res.status(400).json({ error: "Username not found" });

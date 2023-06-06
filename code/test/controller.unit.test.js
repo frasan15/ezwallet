@@ -1,7 +1,11 @@
 import request from "supertest";
 import { app } from "../app";
 import { categories, transactions } from "../models/model";
-import { verifyAuth } from "../controllers/utils";
+import {
+  handleDateFilterParams,
+  handleAmountFilterParams,
+  verifyAuth,
+} from "../controllers/utils";
 import {
   createCategory,
   createTransaction,
@@ -10,14 +14,17 @@ import {
   getAllTransactions,
   getCategories,
   getTransactionsByGroup,
+  getTransactionsByUser,
+  getTransactionsByUserByCategory,
+  getTransactionsByGroupByCategory,
+  deleteTransactions,
 } from "../controllers/controller";
 import { Group, User } from "../models/User";
 
-jest.mock("bcryptjs")
-jest.mock("jsonwebtoken")
-jest.mock("../models/User.js")
-jest.mock('../models/model.js');
-
+jest.mock("bcryptjs");
+jest.mock("jsonwebtoken");
+jest.mock("../models/User.js");
+jest.mock("../models/model.js");
 
 beforeEach(() => {
   categories.count.mockClear();
@@ -32,9 +39,11 @@ beforeEach(() => {
 });
 
 //Necessary step to ensure that the functions in utils.js can be mocked correctly
-jest.mock('../controllers/utils.js', () => ({
-    verifyAuth: jest.fn(),
-}))
+jest.mock("../controllers/utils.js", () => ({
+  verifyAuth: jest.fn(),
+  handleDateFilterParams: jest.fn(),
+  handleAmountFilterParams: jest.fn(),
+}));
 
 describe("createCategory", () => { 
     test('creation of the category successfully completed', async () => {
@@ -793,14 +802,378 @@ describe("getAllTransactions", () => {
 });
 
 describe("getTransactionsByUser", () => {
-  test("Dummy test, change it", () => {
-    expect(true).toBe(true);
+  test("Returns data content of the Transactions of common user", async () => {
+    const mockReq = {
+      params: {
+        username: "Test",
+      },
+      url: "/api/users/TestUser/transactions",
+      cookies: {
+        accessToken: "testerAccessTokenValid",
+        refreshToken: "testerAccessTokenValid",
+      },
+    };
+
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshTokenMessage: "",
+      },
+    };
+
+    verifyAuth.mockImplementation(() => {
+      return { authorized: true, cause: "Authorized" };
+    });
+
+    User.findOne.mockImplementation(() => {
+      return { username: "TestUser" };
+    });
+
+    const retrievedTransactionsByUser = [
+      {
+        username: "TestUser",
+        amount: 100,
+        type: "food",
+        date: "2023-05-19T00:00:00",
+        color: "red",
+      },
+      {
+        username: "TestUser",
+        amount: 70,
+        type: "health",
+        date: "2023-05-19T10:00:00",
+        color: "green",
+      },
+    ];
+
+    transactions.aggregate.mockResolvedValue(retrievedTransactionsByUser);
+
+    handleDateFilterParams.mockImplementation(() => {
+      {
+      }
+    });
+
+    handleAmountFilterParams.mockImplementation(() => {
+      {
+      }
+    });
+
+    await getTransactionsByUser(mockReq, mockRes);
+
+    expect(mockRes.status).toHaveBeenCalledWith(200);
+    expect(mockRes.json).toHaveBeenCalledWith({
+      data: retrievedTransactionsByUser,
+      refreshedTokenMessage: undefined,
+    });
+  });
+
+  test("Returns a 400 error if the username passed as a route parameter does not represent a user in the database", async () => {
+    const mockReq = {
+      params: {
+        username: "Test",
+      },
+      url: "/api/users/TestUser/transactions",
+      cookies: {
+        accessToken: "testerAccessTokenValid",
+        refreshToken: "testerAccessTokenValid",
+      },
+    };
+
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshTokenMessage: "",
+      },
+    };
+
+    verifyAuth.mockImplementation(() => {
+      return { authorized: true, cause: "Authorized" };
+    });
+
+    User.findOne.mockImplementation(() => {
+      return null;
+    });
+
+    await getTransactionsByUser(mockReq, mockRes);
+
+    expect(mockRes.status).toHaveBeenCalledWith(400);
+    expect(mockRes.json).toHaveBeenCalledWith({ error: expect.any(String) });
+  });
+  test("Returns a 401 error if called by an authenticated user who is not the same user as the one in the route (authType = User) if the route is `/api/users/:username/transactions`", async () => {
+    const mockReq = {
+      params: {
+        username: "Test",
+      },
+      url: "/api/users/TestUser/transactions",
+      cookies: {
+        accessToken: "testerAccessTokenValid",
+        refreshToken: "testerAccessTokenValid",
+      },
+    };
+
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshTokenMessage: "",
+      },
+    };
+
+    verifyAuth.mockImplementation(() => {
+      return {
+        authorized: false,
+        cause: "username does not match the related user's token",
+      };
+    });
+
+    await getTransactionsByUser(mockReq, mockRes);
+
+    expect(mockRes.status).toHaveBeenCalledWith(401);
+    expect(mockRes.json).toHaveBeenCalledWith({ error: expect.any(String) });
+  });
+
+  test("Returns a 401 error if called by an authenticated user who is not an admin (authType = Admin) if the route is `/api/transactions/users/:username`", async () => {
+    const mockReq = {
+      params: {
+        username: "Test",
+      },
+      url: "/api/transactions/users/Test",
+      cookies: {
+        accessToken: "testerAccessTokenValid",
+        refreshToken: "testerAccessTokenValid",
+      },
+    };
+
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshTokenMessage: "",
+      },
+    };
+
+    verifyAuth.mockImplementation(() => {
+      return {
+        authorized: false,
+        cause: "function reserved for admins only",
+      };
+    });
+
+    await getTransactionsByUser(mockReq, mockRes);
+
+    expect(mockRes.status).toHaveBeenCalledWith(401);
+    expect(mockRes.json).toHaveBeenCalledWith({ error: expect.any(String) });
   });
 });
 
 describe("getTransactionsByUserByCategory", () => {
-  test("Dummy test, change it", () => {
-    expect(true).toBe(true);
+  test("Returns data content of the Transactions By User By Category", async () => {
+    const mockReq = {
+      params: {
+        username: "TestUser",
+        category: "food",
+      },
+      url: "/api/users/TestUser/transactions/category/food",
+      cookies: {
+        accessToken: "testerAccessTokenValid",
+        refreshToken: "testerAccessTokenValid",
+      },
+    };
+
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshTokenMessage: "",
+      },
+    };
+
+    categories.findOne.mockImplementation(() => {
+      return { type: "food" };
+    });
+
+    verifyAuth.mockImplementation(() => {
+      return { authorized: true, cause: "Authorized" };
+    });
+
+    User.findOne.mockImplementation(() => {
+      return { username: "TestUser" };
+    });
+
+    const retrievedTransactionsByUserByCategory = [
+      {
+        username: "TestUser",
+        amount: 100,
+        type: "food",
+        date: "2023-05-19T00:00:00",
+        color: "red",
+      },
+    ];
+
+    transactions.aggregate.mockResolvedValue(
+      retrievedTransactionsByUserByCategory
+    );
+
+    handleDateFilterParams.mockImplementation(() => {
+      {
+      }
+    });
+
+    handleAmountFilterParams.mockImplementation(() => {
+      {
+      }
+    });
+
+    await getTransactionsByUserByCategory(mockReq, mockRes);
+
+    expect(mockRes.status).toHaveBeenCalledWith(200);
+    expect(mockRes.json).toHaveBeenCalledWith({
+      data: retrievedTransactionsByUserByCategory,
+      refreshedTokenMessage: undefined,
+    });
+  });
+  test("Returns a 400 error if the username passed as a route parameter does not represent a user in the database", async () => {
+    const mockReq = {
+      params: {
+        username: "TestUser",
+        category: "food",
+      },
+      url: "/api/users/TestUser/transactions/category/food",
+      cookies: {
+        accessToken: "testerAccessTokenValid",
+        refreshToken: "testerAccessTokenValid",
+      },
+    };
+
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshTokenMessage: "",
+      },
+    };
+
+    categories.findOne.mockImplementation(() => {
+      return { type: "food" };
+    });
+
+    verifyAuth.mockImplementation(() => {
+      return { authorized: true, cause: "Authorized" };
+    });
+
+    User.findOne.mockImplementation(() => {
+      return null;
+    });
+
+    await getTransactionsByUserByCategory(mockReq, mockRes);
+
+    expect(mockRes.status).toHaveBeenCalledWith(400);
+    expect(mockRes.json).toHaveBeenCalledWith({ error: expect.any(String) });
+  });
+  test("Returns a 400 error if the category passed as a route parameter does not represent a category in the database", async () => {
+    const mockReq = {
+      params: {
+        username: "TestUser",
+        category: "food",
+      },
+      url: "/api/users/TestUser/transactions/category/food",
+      cookies: {
+        accessToken: "testerAccessTokenValid",
+        refreshToken: "testerAccessTokenValid",
+      },
+    };
+
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshTokenMessage: "",
+      },
+    };
+
+    categories.findOne.mockImplementation(() => {
+      return null;
+    });
+    await getTransactionsByUserByCategory(mockReq, mockRes);
+
+    expect(mockRes.status).toHaveBeenCalledWith(400);
+    expect(mockRes.json).toHaveBeenCalledWith({ error: expect.any(String) });
+  });
+  test("Returns a 401 error if called by an authenticated user who is not the same user as the one in the route (authType = User) if the route is `/api/users/:username/transactions/category/:category`", async () => {
+    const mockReq = {
+      params: {
+        username: "TestUser",
+        category: "food",
+      },
+      url: "/api/users/TestUser/transactions/category/food",
+      cookies: {
+        accessToken: "testerAccessTokenValid",
+        refreshToken: "testerAccessTokenValid",
+      },
+    };
+
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshTokenMessage: "",
+      },
+    };
+
+    categories.findOne.mockImplementation(() => {
+      return { type: "food" };
+    });
+
+    verifyAuth.mockImplementation(() => {
+      return {
+        authorized: false,
+        cause: "username does not match the related user's token",
+      };
+    });
+
+    await getTransactionsByUserByCategory(mockReq, mockRes);
+
+    expect(mockRes.status).toHaveBeenCalledWith(401);
+    expect(mockRes.json).toHaveBeenCalledWith({ error: expect.any(String) });
+  });
+  test("Returns a 401 error if called by an authenticated user who is not an admin (authType = Admin) if the route is `/api/transactions/users/:username/category/:category`", async () => {
+    const mockReq = {
+      params: {
+        username: "TestUser",
+        category: "food",
+      },
+      url: "/api/transactions/users/TestUser/category/food",
+      cookies: {
+        accessToken: "testerAccessTokenValid",
+        refreshToken: "testerAccessTokenValid",
+      },
+    };
+
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshTokenMessage: "",
+      },
+    };
+
+    categories.findOne.mockImplementation(() => {
+      return { type: "food" };
+    });
+
+    verifyAuth.mockImplementation(() => {
+      return {
+        authorized: false,
+        cause: "function reserved for admins only",
+      };
+    });
+
+    await getTransactionsByUserByCategory(mockReq, mockRes);
+
+    expect(mockRes.status).toHaveBeenCalledWith(401);
+    expect(mockRes.json).toHaveBeenCalledWith({ error: expect.any(String) });
   });
 });
 
@@ -918,8 +1291,242 @@ describe("getTransactionsByGroup", () => {
 });
 
 describe("getTransactionsByGroupByCategory", () => {
-  test("Dummy test, change it", () => {
-    expect(true).toBe(true);
+  test("Returns data content of the Transactions", async () => {
+    const mockReq = {
+      params: {
+        name: "TestGroup",
+        category: "food",
+      },
+      url: "/api/groups/TestGroup/transactions/category/food",
+      cookies: {
+        accessToken: "testerAccessTokenValid",
+        refreshToken: "testerAccessTokenValid",
+      },
+    };
+
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshTokenMessage: "",
+      },
+    };
+
+    categories.findOne.mockImplementation(() => {
+      return { type: "food" };
+    });
+
+    Group.findOne.mockImplementation(() => {
+      return {
+        name: "TestGroup",
+        members: [{ username: "TestUser", email: "TestEmail" }],
+      };
+    });
+
+    verifyAuth.mockImplementation(() => {
+      return { authorized: true, cause: "Authorized" };
+    });
+
+    Group.findOne = jest.fn().mockReturnValue({
+      name: "testGroup",
+      members: [
+        {
+          email: "tester@test.com",
+          _id: "id",
+        },
+      ],
+    });
+    User.findOne = jest.fn().mockReturnValue({ email: "tester@test.com" });
+
+    const retrievedTransactionsByGroupByCategory = [
+      {
+        username: "Mario",
+        amount: 100,
+        type: "food",
+        date: "2023-05-19T00:00:00",
+        color: "red",
+      },
+      {
+        username: "Luigi",
+        amount: 20,
+        type: "food",
+        date: "2023-05-19T10:00:00",
+        color: "red",
+      },
+    ];
+
+    transactions.aggregate.mockResolvedValue(
+      retrievedTransactionsByGroupByCategory
+    );
+
+    handleDateFilterParams.mockImplementation(() => {
+      {
+      }
+    });
+
+    handleAmountFilterParams.mockImplementation(() => {
+      {
+      }
+    });
+
+    await getTransactionsByGroupByCategory(mockReq, mockRes);
+
+    expect(mockRes.status).toHaveBeenCalledWith(200);
+    expect(mockRes.json).toHaveBeenCalledWith({
+      data: retrievedTransactionsByGroupByCategory,
+      refreshedTokenMessage: undefined,
+    });
+  });
+  test("Returns a 400 error if the group name passed as a route parameter does not represent a group in the database", async () => {
+    const mockReq = {
+      params: {
+        name: "TestGroup",
+        category: "food",
+      },
+      url: "/api/groups/TestGroup/transactions/category/food",
+      cookies: {
+        accessToken: "testerAccessTokenValid",
+        refreshToken: "testerAccessTokenValid",
+      },
+    };
+
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshTokenMessage: "",
+      },
+    };
+
+    categories.findOne.mockImplementation(() => {
+      return { type: "food" };
+    });
+
+    Group.findOne.mockImplementation(() => {
+      return null;
+    });
+
+    await getTransactionsByGroupByCategory(mockReq, mockRes);
+
+    expect(mockRes.status).toHaveBeenCalledWith(400);
+    expect(mockRes.json).toHaveBeenCalledWith({ error: expect.any(String) });
+  });
+  test("Returns a 400 error if the category passed as a route parameter does not represent a category in the database", async () => {
+    const mockReq = {
+      params: {
+        name: "TestGroup",
+        category: "food",
+      },
+      url: "/api/groups/TestGroup/transactions/category/food",
+      cookies: {
+        accessToken: "testerAccessTokenValid",
+        refreshToken: "testerAccessTokenValid",
+      },
+    };
+
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshTokenMessage: "",
+      },
+    };
+
+    categories.findOne.mockImplementation(() => {
+      return null;
+    });
+    await getTransactionsByGroupByCategory(mockReq, mockRes);
+
+    expect(mockRes.status).toHaveBeenCalledWith(400);
+    expect(mockRes.json).toHaveBeenCalledWith({ error: expect.any(String) });
+  });
+  test("Returns a 401 error if called by an authenticated user who is not part of the group (authType = Group) if the route is `/api/groups/:name/transactions/category/:category`", async () => {
+    const mockReq = {
+      params: {
+        name: "TestGroup",
+        category: "food",
+      },
+      url: "/api/groups/TestGroup/transactions/category/food",
+      cookies: {
+        accessToken: "testerAccessTokenValid",
+        refreshToken: "testerAccessTokenValid",
+      },
+    };
+
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshTokenMessage: "",
+      },
+    };
+
+    categories.findOne.mockImplementation(() => {
+      return { type: "food" };
+    });
+
+    Group.findOne.mockImplementation(() => {
+      return {
+        name: "TestGroup",
+        members: [{ username: "TestUser", email: "TestEmail" }],
+      };
+    });
+
+    verifyAuth.mockImplementation(() => {
+      return {
+        authorized: false,
+        cause: "unauthorized, you are not part of the requested group",
+      };
+    });
+
+    await getTransactionsByGroupByCategory(mockReq, mockRes);
+
+    expect(mockRes.status).toHaveBeenCalledWith(401);
+    expect(mockRes.json).toHaveBeenCalledWith({ error: expect.any(String) });
+  });
+  test("Returns a 401 error if called by an authenticated user who is not an admin (authType = Admin) if the route is `/api/transactions/groups/:name/category/:category`", async () => {
+    const mockReq = {
+      params: {
+        name: "TestGroup",
+        category: "food",
+      },
+      url: "/api/transactions/groups/TestGroup/category/food",
+      cookies: {
+        accessToken: "testerAccessTokenValid",
+        refreshToken: "testerAccessTokenValid",
+      },
+    };
+
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshTokenMessage: "",
+      },
+    };
+
+    categories.findOne.mockImplementation(() => {
+      return { type: "food" };
+    });
+
+    Group.findOne.mockImplementation(() => {
+      return {
+        name: "TestGroup",
+        members: [{ username: "TestUser", email: "TestEmail" }],
+      };
+    });
+
+    verifyAuth.mockImplementation(() => {
+      return {
+        authorized: false,
+        cause: "function reserved for admins only",
+      };
+    });
+
+    await getTransactionsByGroupByCategory(mockReq, mockRes);
+
+    expect(mockRes.status).toHaveBeenCalledWith(401);
+    expect(mockRes.json).toHaveBeenCalledWith({ error: expect.any(String) });
   });
 });
 
@@ -1020,7 +1627,175 @@ describe("deleteTransaction", () => {
 });
 
 describe("deleteTransactions", () => {
-  test("Dummy test, change it", () => {
-    expect(true).toBe(true);
+  test("Returns data content of deleted Transactions", async () => {
+    const mockReq = {
+      body: {
+        _ids: ["646deb79c18a785f9caf6283", "646deb95c18a785f9caf6286"],
+      },
+      cookies: {
+        accessToken: "testerAccessTokenValid",
+        refreshToken: "testerAccessTokenValid",
+      },
+    };
+
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshTokenMessage: "",
+      },
+    };
+
+    verifyAuth.mockImplementation(() => {
+      return { authorized: true, cause: "Authorized" };
+    });
+
+    transactions.findOne.mockImplementation(() => {
+      return { _id: "646deb79c18a785f9caf6283" };
+    });
+
+    transactions.findOne.mockImplementation(() => {
+      return { _id: "646deb95c18a785f9caf6286" };
+    });
+
+    const mockMessage = "Transactions deleted";
+
+    transactions.deleteMany.mockImplementation(() => {
+      return { deletedCount: 2 };
+    });
+
+    await deleteTransactions(mockReq, mockRes);
+
+    expect(mockRes.status).toHaveBeenCalledWith(200);
+
+    expect(mockRes.json).toHaveBeenCalledWith({
+      message: mockMessage,
+      refreshedTokenMessage: undefined,
+    });
+  });
+
+  test("Returns a 400 error if the request body does not contain all the necessary attributes", async () => {
+    const mockReq = {
+      body: {},
+      cookies: {
+        accessToken: "testerAccessTokenValid",
+        refreshToken: "testerAccessTokenValid",
+      },
+    };
+
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshTokenMessage: "",
+      },
+    };
+
+    verifyAuth.mockImplementation(() => {
+      return { authorized: true, cause: "Authorized" };
+    });
+
+    await deleteTransactions(mockReq, mockRes);
+
+    expect(mockRes.status).toHaveBeenCalledWith(400);
+    expect(mockRes.json).toHaveBeenCalledWith({ error: expect.any(String) });
+  });
+
+  test("Returns a 400 error if at least one of the ids in the array is an empty string", async () => {
+    const mockReq = {
+      body: {
+        _ids: ["", "646deb95c18a785f9caf6286"],
+      },
+      cookies: {
+        accessToken: "testerAccessTokenValid",
+        refreshToken: "testerAccessTokenValid",
+      },
+    };
+
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshTokenMessage: "",
+      },
+    };
+
+    verifyAuth.mockImplementation(() => {
+      return { authorized: true, cause: "Authorized" };
+    });
+
+    await deleteTransactions(mockReq, mockRes);
+
+    expect(mockRes.status).toHaveBeenCalledWith(400);
+    expect(mockRes.json).toHaveBeenCalledWith({ error: expect.any(String) });
+  });
+
+  test("Returns a 400 error if at least one of the ids in the array is an empty string", async () => {
+    const mockReq = {
+      body: {
+        _ids: ["646deb95c18a785f9caf6286"],
+      },
+      cookies: {
+        accessToken: "testerAccessTokenValid",
+        refreshToken: "testerAccessTokenValid",
+      },
+    };
+
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshTokenMessage: "",
+      },
+    };
+
+    verifyAuth.mockImplementation(() => {
+      return { authorized: true, cause: "Authorized" };
+    });
+
+    transactions.findOne.mockImplementation(() => {
+      return null;
+    });
+
+    await deleteTransactions(mockReq, mockRes);
+
+    expect(mockRes.status).toHaveBeenCalledWith(400);
+    expect(mockRes.json).toHaveBeenCalledWith({ error: expect.any(String) });
+  });
+
+  test("Returns a 401 error if called by an authenticated user who is not an admin (authType = Admin)", async () => {
+    const mockReq = {
+      body: {
+        _ids: ["646deb95c18a785f9caf6286"],
+      },
+      cookies: {
+        accessToken: "testerAccessTokenValid",
+        refreshToken: "testerAccessTokenValid",
+      },
+    };
+
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshTokenMessage: "",
+      },
+    };
+
+    verifyAuth.mockImplementation(() => {
+      return {
+        authorized: false,
+        cause: "function reserved for admins only",
+      };
+    });
+
+    transactions.findOne.mockImplementation(() => {
+      return null;
+    });
+
+    await deleteTransactions(mockReq, mockRes);
+
+    expect(mockRes.status).toHaveBeenCalledWith(400);
+    expect(mockRes.json).toHaveBeenCalledWith({ error: expect.any(String) });
   });
 });

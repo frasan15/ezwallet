@@ -48,10 +48,36 @@
 | should return 401 if the user is not authorized|||||
 | should return 200 with an array with all transactions|||||
 | should return 200 with an array with empty transactions array|||||
+| getTransactionsByUser | getTransactionsByUser | unit, integration | WB statement coverage |
+|Returns data content of the Transactions of common user|||||
+|Returns a 400 error if the username passed as a route parameter does not represent a user in the database|||||
+|Returns a 401 error if called by an authenticated user who is not the same user as the one in the route (authType = User) if the route is `/api/users/:username/transactions`|||||
+|Returns a 401 error if called by an authenticated user who is not an admin (authType = Admin) if the route is `/api/transactions/users/:username`|||||
+| getTransactionsByUserByCategory | getTransactionsByUserByCategory | unit, integration | WB statement coverage |
+|Returns data content of the Transactions By User By Category|||||
+|Returns a 400 error if the username passed as a route parameter does not represent a user in the database|||||
+|Returns a 400 error if the category passed as a route parameter does not represent a category in the database|||||
+|Returns a 401 error if called by an authenticated user who is not the same user as the one in the route (authType = User) if the route is `/api/users/:username/transactions/category/:category`|||||
+|Returns a 401 error if called by an authenticated user who is not an admin (authType = Admin) if the route is `/api/transactions/users/:username/category/:category`|||||
+| getTransactionsByGroup | getTransactionsByGroup | unit, integration | WB statement coverage |
+|should return 401 if the user is not authorized|||||
+|should return 200 with an array with all transactions of the group|||||
+| getTransactionsByGroupByCategory | getTransactionsByGroupByCategory | unit, integration | WB statement coverage |
+|Returns data content of the Transactions|||||
+|Returns a 400 error if the group name passed as a route parameter does not represent a group in the database|||||
+|Returns a 400 error if the category passed as a route parameter does not represent a category in the database|||||
+|Returns a 401 error if called by an authenticated user who is not part of the group (authType = Group) if the route is `/api/groups/:name/transactions/category/:category`|||||
+|Returns a 401 error if called by an authenticated user who is not an admin (authType = Admin) if the route is `/api/transactions/groups/:name/category/:category`|||||
 | deleteTransaction | deleteTransaction | WB statement coverage |
 | should return 401 if the user is not authorized ||||
 | should return 400 if the transaction id is invalid ||||
 | should return 200 and a message if the transaction is deleted ||||
+| deleteTransactions | deleteTransactions | unit, integration | WB statement coverage |
+|Returns data content of deleted Transactions||||
+|Returns a 400 error if the request body does not contain all the necessary attributes||||
+|Returns a 400 error if at least one of the ids in the array is an empty string||||
+|Returns a 400 error if at least one of the ids in the array does not represent a transaction in the database||||
+|Returns a 401 error if called by an authenticated user who is not an admin (authType = Admin)||||
 | register | register | unit, integration | WB statement coverage |
 | Should return 400 if request body does not contain all the necessary attributes ||||
 | Should return 400 if at least one of the parameters in the request body is an empty string ||||
@@ -77,6 +103,10 @@
 | should return empty list if there are no users ||||
 | should retrieve list of all users ||||
 | should return 401 if user is not authorized ||||
+| getUser | getUser | unit, integration | WB statement coverage |
+| Returns requested user ||||
+| Returns a 400 error if the username passed as the route parameter does not represent a user in the database ||||
+| Returns a 401 error if called by an authenticated user who is neither the same user as the one in the route parameter (authType = User) nor an admin (authType = Admin) ||||
 | deleteUser | deleteUser | unit, integration | WB statement coverage |
 | should return 401 if user is not authorized ||||
 | should return 400 if email is missing, empty or invalid ||||

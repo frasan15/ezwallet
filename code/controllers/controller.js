@@ -665,8 +665,9 @@ export const deleteTransaction = async (req, res) => {
  */
 export const deleteTransactions = async (req, res) => {
   try {
+
     const isAdmin = verifyAuth(req, res, { authType: "Admin" });
-    if (!isAdmin){
+    if (!isAdmin.authorized){
       return res.status(401).json({ error: isAdmin.cause });
     }
     if (!req.body._ids || req.body._ids.length === 0) {

@@ -1730,7 +1730,7 @@ describe("deleteTransactions", () => {
     expect(mockRes.json).toHaveBeenCalledWith({ error: expect.any(String) });
   });
 
-  test("Returns a 400 error if at least one of the ids in the array is an empty string", async () => {
+  test("Returns a 400 error if at least one of the ids in the array does not represent a transaction in the database", async () => {
     const mockReq = {
       body: {
         _ids: ["646deb95c18a785f9caf6286"],
@@ -1795,7 +1795,7 @@ describe("deleteTransactions", () => {
 
     await deleteTransactions(mockReq, mockRes);
 
-    expect(mockRes.status).toHaveBeenCalledWith(400);
+    expect(mockRes.status).toHaveBeenCalledWith(401);
     expect(mockRes.json).toHaveBeenCalledWith({ error: expect.any(String) });
   });
 });

@@ -128,7 +128,87 @@ describe("getUsers", () => {
   });
 });
 
-describe("getUser", () => {});
+describe("getUser", () => {
+  test("Returns requested user", async () => {
+    const user = {
+      username: "tester",
+      email: "tester@test.com",
+      password: "tester",
+      role: "Regular",
+      refreshToken: testerAccessTokenValid,
+    };
+    await User.create(user);
+
+    //The API request must be awaited as well
+    const response = await request(app)
+      .get("/api/users/tester")
+      .set(
+        "Cookie",
+        `accessToken=${testerAccessTokenValid}; refreshToken=${testerAccessTokenValid}`
+      )
+      .send({
+        params: {
+          username: "tester",
+        },
+      });
+    console.log(response.error);
+    expect(response.status).toBe(200);
+    expect(response.body.data.username).toEqual(user.username);
+    expect(response.body.data.email).toEqual(user.email);
+    expect(response.body.data.role).toEqual(user.role);
+  });
+  test("Returns a 400 error if the username passed as the route parameter does not represent a user in the database", async () => {
+    const admin = {
+      username: "admin",
+      email: "admin@email.com",
+      password: "admin",
+      refreshToken: adminAccessTokenValid,
+      role: "Admin",
+    };
+
+    await User.create(admin);
+
+    //The API request must be awaited as well
+    const response = await request(app)
+      .get("/api/users/tester")
+      .set(
+        "Cookie",
+        `accessToken=${adminAccessTokenValid}; refreshToken=${adminAccessTokenValid}`
+      )
+      .send();
+    expect(response.status).toBe(400);
+    expect(response.body).toHaveProperty("error");
+  });
+  test("Returns a 401 error if called by an authenticated user who is neither the same user as the one in the route parameter (authType = User) nor an admin (authType = Admin)", async () => {
+    const usersArray = [
+      {
+        username: "tester",
+        email: "tester@test.com",
+        password: "tester",
+        role: "Regular",
+        refreshToken: testerAccessTokenValid,
+      },
+      {
+        username: "admin",
+        email: "admin@email.com",
+        password: "admin",
+        refreshToken: adminAccessTokenValid,
+        role: "Admin",
+      },
+    ];
+    await User.insertMany(usersArray);
+
+    const response = await request(app)
+      .get("/api/users/admin")
+      .set(
+        "Cookie",
+        `accessToken=${testerAccessTokenValid}; refreshToken=${testerAccessTokenValid}`
+      )
+      .send();
+    expect(response.status).toBe(401);
+    expect(response.body).toHaveProperty("error");
+  });
+});
 
 describe("createGroup", () => {});
 

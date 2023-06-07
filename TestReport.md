@@ -36,9 +36,53 @@
 
 | Test case name | Object(s) tested | Test level | Technique used |
 |--|--|--|--|
-|||||
-
-
+| createTransaction | createTransaction | unit, integration | WB statement coverage |
+| should return 401 if the user is not authorized|||||
+| should return 400 if any of the body params are missing or invalid|||||
+| should return 400 if any of the body params are empty strings|||||
+| should return 400 if the amount is not a number|||||
+| should return 400 if user in transaction does not exist|||||
+| should return 400 if category in transaction does not exist|||||
+| should return 200 if the transaction is created successfully|||||
+| getAllTransactions | getAllTransactions | unit, integration | WB statement coverage |
+| should return 401 if the user is not authorized|||||
+| should return 200 with an array with all transactions|||||
+| should return 200 with an array with empty transactions array|||||
+| deleteTransaction | deleteTransaction | WB statement coverage |
+| should return 401 if the user is not authorized ||||
+| should return 400 if the transaction id is invalid ||||
+| should return 200 and a message if the transaction is deleted ||||
+| register | register | unit, integration | WB statement coverage |
+| Should return 400 if request body does not contain all the necessary attributes ||||
+| Should return 400 if at least one of the parameters in the request body is an empty string ||||
+| Should return 400 if the email in the request body is not in a valid email format ||||
+| Should return 400 if the username in the request body identifies an already existing user ||||
+| Should return 400 if the email in the request body identifies an already existing user ||||
+| Should return 200 if the user is added successfully ||||
+| registerAdmin | registerAdmin | unit, integration | WB statement coverage |
+| Should return 400 if request body does not contain all the necessary attributes ||||
+| Should return 400 if at least one of the parameters in the request body is an empty string ||||
+| Should return 400 if the email in the request body is not in a valid email format ||||
+| Should return 400 if the username in the request body identifies an already existing user ||||
+| Should return 400 if the email in the request body identifies an already existing user ||||
+| Should return 200 if the user is added successfully ||||
+| handleDateFilterParams | handleDateFilterParams | unit, integration | WB statement coverage |
+| Returns a filter object which contains data attribute if only "date" is present in query ||||
+| Throws an error if at least one of the query parameters is not a date in the format "YYYY-MM-DD" ||||
+| Throws an error if in the query "date" parameter is present with either "from" or "upTo" ||||
+| handleAmountFilterParams | handleAmountFilterParams | unit, integration | WB statement coverage |
+| Function called with either min and/or max should return a filter object with mix and/or max attributes ||||
+| Should throw an error if min or max are passed with strings that do cannot be parsed as number ||||
+| getUsers | getUsers | unit, integration | WB statement coverage |
+| should return empty list if there are no users ||||
+| should retrieve list of all users ||||
+| should return 401 if user is not authorized ||||
+| deleteUser | deleteUser | unit, integration | WB statement coverage |
+| should return 401 if user is not authorized ||||
+| should return 400 if email is missing, empty or invalid ||||
+| should return 400 if user does not exist in database ||||
+| should return 400 if user is an admin ||||
+| should return 200 if user and his transactions are deleted, with one user in a group ||||
 
 
 
@@ -52,10 +96,55 @@
 
 | Functional Requirements covered |   Test(s) | 
 | ------------------------------- | ----------- | 
-| FRx                             |             |             
-| FRy                             |             | 
-| ... ||
-
+| FR1 Manage | ------- |
+| FR11 register | Should return 400 if request body does not contain all the necessary attributes |
+|| Should return 400 if at least one of the parameters in the request body is an empty string |
+|| Should return 400 if the email in the request body is not in a valid email format |
+|| Should return 400 if the username in the request body identifies an already existing user |
+|| Should return 400 if the email in the request body identifies an already existing user |
+|| Should return 200 if the user is added successfully |
+| FR12 login | |
+| FR13 logout | |
+| FR14 registerAdmin | Should return 400 if request body does not contain all the necessary attributes |
+|| Should return 400 if at least one of the parameters in the request body is an empty string |
+|| Should return 400 if the email in the request body is not in a valid email format |
+|| Should return 400 if the username in the request body identifies an already existing user |
+|| Should return 400 if the email in the request body identifies an already existing user |
+|| Should return 200 if the user is added successfully |
+| FR15 getUsers | should return empty list if there are no users |
+|| should retrieve list of all users |
+|| should return 401 if user is not authorized |
+| FR16 getUser | |
+| FR17 deleteUser | should return 401 if user is not authorized |
+|| should return 400 if email is missing, empty or invalid |
+|| should return 400 if user does not exist in database |
+|| should return 400 if user is an admin |
+|| should return 200 if user and his transactions are deleted, with one user in a group |
+| FR2 Manage | |
+| FR21 createGroup | |
+| FR22 getGroups | |
+| FR23 getGroup | |
+| FR24 addToGroup | |
+| FR26 removeFromGroup | |
+| FR28 deleteGroup | |
+|  FR3 Manage | |
+| FR31 
+| FR32 getAllTransactions | should return 401 if the user is not authorized|
+|| should return 200 with an array with all transactions|
+|| should return 200 with an array with empty transactions array|
+| FR33 getTransactionsByUser | |
+| FR34 
+| FR35 getTransactionsByGroup | |
+| FR36 getTransactionsByGroupByCategory | |
+| FR37 deleteTransaction | should return 401 if the user is not authorized |
+|| should return 400 if the transaction id is invalid |
+|| should return 200 and a message if the transaction is deleted |
+| FR38 deleteTransactions | |
+| FR4 Manage | |
+| FR41 createCategory | |
+| FR42 updateCategory | |
+| FR43 deleteCategory | |
+| FR44 getCategories | |
 
 
 ## Coverage white box

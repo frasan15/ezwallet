@@ -369,4 +369,87 @@ describe("deleteUser", () => {
   });
 });
 
-describe("deleteGroup", () => {});
+describe("deleteGroup", () => {
+  test("Group has been successfully deleted", async () => {
+    const user ={
+      username: "admin",
+      email: "admin@email.com",
+      password: "admin",
+      role: "Admin",
+      refreshToken: adminAccessTokenValid,
+  } 
+  await User.create(user)
+  await Group.insertMany({name: "Family" , members:{email: "email1@polito.com"}},
+  {name:"group2" , members:{email:"email2@polito.it"}})
+  const response = await request(app)
+  .delete("/api/groups")
+  .set("Cookie",`accessToken=${adminAccessTokenValid}; refreshToken=${adminAccessTokenValid}`)
+  .send({username:"admin" , name: "Family"})
+  expect(response.status).toBe(200);
+  expect(response.body).toEqual({data: { error: expect.any(String) }})
+  })
+  test("Should Return 400, if User is not Authorized", async()=> {
+    const user ={
+      username: "tester",
+      email: "tester@email.com",
+      password: "tester",
+      role: "regular",
+      refreshToken: testerAccessTokenValid,
+  } 
+  await User.create(user)
+  const response = await request(app)
+  .delete("/api/groups")
+  .send({ username: "tester", types:["Family"] });
+  expect(response.status).toBe(401);
+  expect(response.body).toEqual({ error: expect.any(String) })
+  })
+  test("Should return 400 if the request body does not contain all the necessary attributes" , async()=>{
+    const user ={
+      username: "admin",
+      email: "admin@email.com",
+      password: "admin",
+      role: "Admin",
+      refreshToken: adminAccessTokenValid,
+  } 
+  await User.create(user)
+  const response = await request(app)
+  .delete("/api/groups")
+  .set("Cookie",`accessToken=${adminAccessTokenValid}; refreshToken=${adminAccessTokenValid}`)
+  .send({username:"admin" })
+  expect(response.status).toBe(400);
+  expect(response.body).toEqual({ error: expect.any(String) })
+  })
+  test("Should Returns a 400 error if the name passed in the request body is an empty string" , async()=>{
+    const user ={
+      username: "admin",
+      email: "admin@email.com",
+      password: "admin",
+      role: "Admin",
+      refreshToken: adminAccessTokenValid,
+  } 
+  await User.create(user)
+  const response = await request(app)
+  .delete("/api/groups")
+  .set("Cookie",`accessToken=${adminAccessTokenValid}; refreshToken=${adminAccessTokenValid}`)
+  .send({username:"admin" , name: " " })
+  expect(response.status).toBe(400);
+  expect(response.body).toEqual({ error: expect.any(String) })
+  })
+  test ("Should Return  400 error if group is not exist ", async()=>{
+    const user ={
+      username: "admin",
+      email: "admin@email.com",
+      password: "admin",
+      role: "Admin",
+      refreshToken: adminAccessTokenValid,
+  } 
+  await User.create(user)
+  await Group.insertMany({name: "Family" , members:{email: "email1@polito.com"}})
+  const response = await request(app)
+  .delete("/api/groups")
+  .set("Cookie",`accessToken=${adminAccessTokenValid}; refreshToken=${adminAccessTokenValid}`)
+  .send({username:"admin" , name: "group1"})
+  expect(response.status).toBe(400);
+  expect(response.body).toEqual({ error: expect.any(String) })
+  })
+});

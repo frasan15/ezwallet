@@ -59,15 +59,217 @@ describe("createCategory", () => {
 });
 
 describe("updateCategory", () => { 
-    test('Dummy test, change it', () => {
-        expect(true).toBe(true);
-    });
+  test('Should return 401 error if called by an authenticated user who is not an admin', async() => {
+    const user ={
+      username: "tester",
+      email: "tester@test.com",
+      password: "tester",
+      role: "Regular",
+      refreshToken: testerAccessTokenValid,
+  }
+  await User.create(user)
+  const response = await request(app)
+  .patch("/api/categories/food")
+  .send({username:"tester" ,type: "food", color: "yellow" })
+  .set("Cookie", `accessToken=${testerAccessTokenValid}; refreshToken=${testerAccessTokenValid}`)
+  expect(response.status).toBe(401);
+  expect(response.body).toEqual({ error: expect.any(String) }) 
+})
+test("Should 400 error if the request body does not contain all the necessary attributes" , async()=> {
+  const user ={
+    username: "admin",
+    email: "admin@email.com",
+    password: "admin",
+    role: "Admin",
+    refreshToken: adminAccessTokenValid,
+  }
+  await User.create(user)
+  const response=await request(app)
+  .patch("/api/categories/food")
+  .set("Cookie", `accessToken=${adminAccessTokenValid}; refreshToken=${adminAccessTokenValid}`)
+  .send({username:"admin" , color: "yellow" });
+  expect(response.status).toBe(400);
+  expect(response.body).toEqual({ error: expect.any(String) }) 
+})
+test("Should return 400 error if request body is an empty string", async()=> {
+  const user ={
+    username: "admin",
+    email: "admin@email.com",
+    password: "admin",
+    role: "Admin",
+    refreshToken: adminAccessTokenValid,
+  }
+  await User.create(user)
+  const response=await request(app)
+  .patch("/api/categories/food")
+  .set("Cookie", `accessToken=${adminAccessTokenValid}; refreshToken=${adminAccessTokenValid}`)
+  .send({username:"admin" , type :"" , color: "" });
+  expect(response.status).toBe(400);
+  expect(response.body).toEqual({ error: expect.any(String) }) 
+})
+test("Should return 400 error if the type of category in request params is not exist in the database", async()=>{
+  const user ={
+    username: "admin",
+    email: "admin@email.com",
+    password: "admin",
+    role: "Admin",
+    refreshToken: adminAccessTokenValid,
+  }
+  await User.create(user)
+  await categories.insertMany({type: "student" , color:"yellow"},{type:"teacher" , color:"green"})
+  const response=await request(app)
+  .patch("/api/categories/food")
+  .set("Cookie", `accessToken=${adminAccessTokenValid}; refreshToken=${adminAccessTokenValid}`)
+  .send({username:"admin" , type :"food2" , color: "red" });
+  expect(response.status).toBe(400);
+  expect(response.body).toEqual({ error: expect.any(String) }) 
+})
+test("Should return 400 error if the type of category passed in the request body is already existing in the database", async()=> {
+  const user ={
+    username: "admin",
+    email: "admin@email.com",
+    password: "admin",
+    role: "Admin",
+    refreshToken: adminAccessTokenValid,
+  }
+  await User.create(user)
+  await categories.insertMany({type: "student" , color:"yellow"},{type:"teacher" , color:"green"})
+  const response=await request(app)
+  .patch("/api/categories/food")
+  .set("Cookie", `accessToken=${adminAccessTokenValid}; refreshToken=${adminAccessTokenValid}`)
+  .send({username:"admin" , type :"student" , color: "red" });
+  expect(response.status).toBe(400);
+  expect(response.body).toEqual({ error: expect.any(String) }) 
+})
 })
 
 describe("deleteCategory", () => { 
-    test('Dummy test, change it', () => {
-        expect(true).toBe(true);
-    });
+  test("Should return 401 Error if user is Unauthorized" , async() =>{
+      const user ={
+          username: "tester",
+          email: "tester@test.com",
+          password: "tester",
+          role: "Regular",
+          refreshToken: testerAccessTokenValid,
+      }
+      await User.create(user)
+      const response = await request(app)
+      .delete("/api/categories")
+      .send({ username: "tester", types:["Family"] });
+      expect(response.status).toBe(401);
+      expect(response.body).toEqual({ error: expect.any(String) })    
+  });
+  test("Should return 400 Error if only one category is left", async () => {
+      const user ={
+          username: "admin",
+          email: "admin@email.com",
+          password: "admin",
+          role: "Admin",
+          refreshToken: adminAccessTokenValid,
+      } 
+      await User.create(user)
+      const response = await request(app)
+      .delete("/api/categories")
+      .set("Cookie",`accessToken=${adminAccessTokenValid}; refreshToken=${adminAccessTokenValid}`)
+      .send({ username: "admin", types:["student"] })
+      expect(response.status).toBe(400);
+      expect(response.body).toEqual({ error: expect.any(String) }) 
+  })
+  test("Should return 400 Error if Request body is Empty", async() =>{ 
+      const user ={
+          username: "admin",
+          email: "admin@email.com",
+          password: "admin",
+          role: "Admin",
+          refreshToken: adminAccessTokenValid,
+      } 
+      await User.create(user)
+      const response = await request(app)
+      .delete("/api/categories")
+      .set(
+          "Cookie",
+          `accessToken=${adminAccessTokenValid}; refreshToken=${adminAccessTokenValid}`
+        )
+      .send({ username: "admin", types:[" "] })
+      expect(response.status).toBe(400);
+      expect(response.body).toEqual({ error: expect.any(String) })
+  })
+  test("400 error if the request body does not contain necessary attributes" , async()=>{ 
+      const user ={
+          username: "admin",
+          email: "admin@email.com",
+          password: "admin",
+          role: "Admin",
+          refreshToken: adminAccessTokenValid,
+      } 
+      await User.create(user)
+      const response = await request(app)
+      .delete("/api/categories")
+      .set(
+          "Cookie",
+          `accessToken=${adminAccessTokenValid}; refreshToken=${adminAccessTokenValid}`
+        )
+      .send({ username: "admin" })
+      expect(response.status).toBe(400);
+      expect(response.body).toEqual({ error: expect.any(String) })
+
+       })
+       test("Should return 400 Error if Request body is Empty", async() =>{ 
+      const user ={
+          username: "admin",
+          email: "admin@email.com",
+          password: "admin",
+          role: "Admin",
+          refreshToken: adminAccessTokenValid,
+      } 
+      await User.create(user)
+      const response = await request(app)
+      .delete("/api/categories")
+      .set(
+          "Cookie",
+          `accessToken=${adminAccessTokenValid}; refreshToken=${adminAccessTokenValid}`
+        )
+      .send({ username: "admin", types:[""] })
+      expect(response.status).toBe(400);
+      expect(response.body).toEqual({ error: expect.any(String) })
+  })
+       test("Return 200 if Category Deleted successfully" , async()=>{
+          const user ={
+              username: "admin",
+              email: "admin@email.com",
+              password: "admin",
+              role: "Admin",
+              refreshToken: adminAccessTokenValid,
+          } 
+          await categories.insertMany({types :"Food" , color:"red"});
+          await User.create(user)
+          const response = await request(app)
+          .delete("/api/categories")
+          .set("Cookie",`accessToken=${adminAccessTokenValid}; refreshToken=${adminAccessTokenValid}`)
+          .send({ username: "admin" , types : ["Food"]})
+          expect(response.body).toEqual({data : { message: expect.any(String)  }})
+       })
+       test("Should return 400 if the category is not exist in DataBase", async() =>{ 
+        const user ={
+            username: "admin",
+            email: "admin@email.com",
+            password: "admin",
+            role: "Admin",
+            refreshToken: adminAccessTokenValid,
+        } 
+        await User.create(user)
+        await categories.insertMany({type:"student" ,color :"red"},
+        {type:"student2" , color:"yellow"},{type:"teachers2", color:"green"})
+        const response = await request(app)
+        .delete("/api/categories")
+        .set(
+            "Cookie",
+            `accessToken=${adminAccessTokenValid}; refreshToken=${adminAccessTokenValid}`
+          )
+        .send({ username: "admin", types:["teacher"] })
+        expect(response.status).toBe(400);
+        expect(response.body).toEqual({ error: expect.any(String) })
+    })
 })
 
 describe("getCategories", () => { 

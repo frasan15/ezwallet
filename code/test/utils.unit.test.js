@@ -4,6 +4,8 @@ import {
     handleAmountFilterParams,
   } from "../controllers/utils";
   
+  jest.mock("jsonwebtoken");
+  
   beforeAll(() => {
     jest.clearAllMocks();
   });

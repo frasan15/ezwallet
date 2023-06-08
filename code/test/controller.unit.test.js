@@ -209,10 +209,162 @@ describe("createCategory", () => {
 })
 
 describe("updateCategory", () => { 
-    test('Dummy test, change it', () => {
-        expect(true).toBe(true);
-    });
-})
+  test('Should return 401 error if called by an authenticated user who is not an admin', async() => {
+      const req ={
+          body :{
+              type : "food" ,
+              colore : "red"
+          },
+          cookies: {accessToken: "bbbi", refreshToken: "bbjbjkb"},
+      }
+      const res = {
+          status: jest.fn().mockReturnThis(),
+          json: jest.fn(),
+          locals: {
+              refreshTokenMessage: ""
+          }
+      }
+      verifyAuth.mockImplementation(() => {
+          return {authorized: false, cause: "Unauthorized"}
+      })
+      await updateCategory(req,res)
+      expect(res.status).toHaveBeenCalledWith(401)
+      expect(res.json).toHaveBeenCalledWith({error: expect.any(String)})
+  })
+  test("Should 400 error if the request body does not contain all the necessary attributes" , async()=> {
+      const req ={
+          body :{
+              type : "food" 
+              
+          },
+          cookies: {accessToken: "bbbi", refreshToken: "bbjbjkb"},
+      }
+      const res = {
+          status: jest.fn().mockReturnThis(),
+          json: jest.fn(),
+          locals: {
+              refreshTokenMessage: ""
+          }
+      }
+      verifyAuth.mockImplementation(() => { return {authorized: true, cause: "Authorized"}})
+      await updateCategory(req,res)
+      expect(res.status).toHaveBeenCalledWith(400)
+      expect(res.json).toHaveBeenCalledWith({error: expect.any(String)})
+  })
+
+  test("Should return 400 error if request body is an empty string", async()=> {
+      const req ={
+          body :{
+              type : "food" ,
+              color : " "
+              
+          },
+          cookies: {accessToken: "bbbi", refreshToken: "bbjbjkb"},
+      }
+      const res = {
+          status: jest.fn().mockReturnThis(),
+          json: jest.fn(),
+          locals: {
+              refreshTokenMessage: ""
+          }
+      }
+      verifyAuth.mockImplementation(() => { return {authorized: true, cause: "Authorized"}})
+      await updateCategory(req,res)
+      expect(res.status).toHaveBeenCalledWith(400)
+      expect(res.json).toHaveBeenCalledWith({error: expect.any(String)})
+  })
+
+  test("Should return 400 error if the type of category in request params is not exist in the database", async()=>{
+      const req ={
+          params :{
+              type : "me"
+          },
+          body :{
+              type : "food" ,
+              color : "red"
+              
+          },
+          cookies: {accessToken: "bbbi", refreshToken: "bbjbjkb"},
+      }
+      const res = {
+          status: jest.fn().mockReturnThis(),
+          json: jest.fn(),
+          locals: {
+              refreshTokenMessage: ""
+          }
+      }
+      verifyAuth.mockImplementation(() => { return {authorized: true, cause: "Authorized"}})
+      categories.updateOne.mockResolvedValue({ modifiedCount: 0 });
+      await updateCategory(req, res);
+      expect(categories.updateOne).toHaveBeenCalledWith( { type: req.params.type },
+      { $set: { type: req.body.type, color: req.body.color } });
+      expect(res.status).toHaveBeenCalledWith(400)
+      expect(res.json).toHaveBeenCalledWith({error: expect.any(String)})
+  })
+  test("Should return 400 error if the type of category passed in the request body is already existing in the database", async()=> {
+      const req ={
+          params :{
+              type : ""
+          },
+          body :{
+              type : "food" ,
+              color : "red"
+              
+          },
+          cookies: {accessToken: "bbbi", refreshToken: "bbjbjkb"},
+      }
+      const res = {
+          status: jest.fn().mockReturnThis(),
+          json: jest.fn(),
+          locals: {
+              refreshTokenMessage: ""
+          }
+      }
+      verifyAuth.mockImplementation(() => { return {authorized: true, cause: "Authorized"}})
+      categories.findOne.mockResolvedValue({ type: "food" })
+      await updateCategory(req, res);
+      expect(categories.findOne).toHaveBeenCalledWith({ type: req.body.type });
+      expect(res.status).toHaveBeenCalledWith(400)
+      expect(res.json).toHaveBeenCalledWith({error: expect.any(String)})
+  })
+  test("Category Updated succesfully" , async()=> {
+      const req ={
+          params :{
+              type : "food"
+          },
+          body :{
+              type : "food2" ,
+              color : "red"
+              
+          },
+          cookies: {accessToken: "bbbi", refreshToken: "bbjbjkb"},
+      }
+      const res = {
+          status: jest.fn().mockReturnThis(),
+          json: jest.fn(),
+          locals: {
+              refreshTokenMessage: ""
+          }
+      }
+      verifyAuth.mockImplementation(() => { return {authorized: true, cause: "Authorized"}})
+      const updateResult = { modifiedCount: 2 };
+      transactions.updateMany.mockResolvedValue(updateResult);
+      await updateCategory(req, res);
+      expect(transactions.updateMany).toHaveBeenCalledWith(
+  { type: req.params.type },
+  { $set: { type: req.body.type } }
+);
+const expectedData = {
+  count: updateResult.modifiedCount,
+  message: "successful updating",
+};
+const expectedResponse = {
+  data: expectedData,
+  refreshedTokenMessage: res.locals.refreshedTokenMessage,
+};
+expect(res.json).toHaveBeenCalledWith(expectedResponse);
+  })
+});
 
 describe("deleteCategory", () => {
   test("Category Deleted successfully", async () => {

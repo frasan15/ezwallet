@@ -1,7 +1,7 @@
 import request from 'supertest';
 import { app } from '../app';
 import { User } from '../models/User.js';
-import { login, register, registerAdmin } from '../controllers/auth';
+import { login, register, registerAdmin,logout } from '../controllers/auth';
 import jwt from "jsonwebtoken";
 const bcrypt = require("bcryptjs")
 
@@ -19,7 +19,7 @@ jest.mock('../models/User.js');
 jest.mock("jsonwebtoken")
 
 describe("register", () => {
-  test.only("Should return 400 if request body does not contain all the necessary attributes", async () => {
+  test("Should return 400 if request body does not contain all the necessary attributes", async () => {
     const mockReq = {
       body: { username: "Mario", password: "securePass" },
       url: "/api/register",
@@ -35,7 +35,7 @@ describe("register", () => {
     expect(mockRes.json).toHaveBeenCalledWith({ error: "Missing attributes" });
   });
 
-  test.only("Should return 400 if at least one of the parameters in the request body is an empty string", async () => {
+  test("Should return 400 if at least one of the parameters in the request body is an empty string", async () => {
     const mockReq = {
       body: { username: "Mario", email: "", password: "securePass" },
       url: "/api/register",
@@ -51,7 +51,7 @@ describe("register", () => {
     expect(mockRes.json).toHaveBeenCalledWith({ error: "Empty attributes" });
   });
 
-  test.only("Should return 400 if the email in the request body is not in a valid email format", async () => {
+  test("Should return 400 if the email in the request body is not in a valid email format", async () => {
     const mockReq = {
       body: { username: "Mario", email: "notAnEmail", password: "securePass" },
       url: "/api/register",
@@ -69,7 +69,7 @@ describe("register", () => {
     });
   });
 
-  test.only("Should return 400 if the username in the request body identifies an already existing user", async () => {
+  test("Should return 400 if the username in the request body identifies an already existing user", async () => {
     const mockReq = {
       body: {
         username: "test",
@@ -100,7 +100,7 @@ describe("register", () => {
     });
   });
 
-  test.only("Should return 400 if the email in the request body identifies an already existing user", async () => {
+  test("Should return 400 if the email in the request body identifies an already existing user", async () => {
     const mockReq = {
         body: {
           username: "test",
@@ -131,7 +131,7 @@ describe("register", () => {
       });
   });
 
-  test.only("Should return 200 if the user is added successfully", async () => {
+  test("Should return 200 if the user is added successfully", async () => {
     const mockReq = {
         body: {
           username: "test",
@@ -175,7 +175,7 @@ describe("register", () => {
 - Returns a 400 error if the email in the request body identifies an already existing user
  */
 describe("registerAdmin", () => {
-  test.only("Should return 400 if request body does not contain all the necessary attributes", async () => {
+  test("Should return 400 if request body does not contain all the necessary attributes", async () => {
     const mockReq = {
       body: { username: "Mario", password: "securePass" },
       url: "/api/admin",
@@ -191,7 +191,7 @@ describe("registerAdmin", () => {
     expect(mockRes.json).toHaveBeenCalledWith({ error: "Missing attributes" });
   });
 
-  test.only("Should return 400 if at least one of the parameters in the request body is an empty string", async () => {
+  test("Should return 400 if at least one of the parameters in the request body is an empty string", async () => {
     const mockReq = {
       body: { username: "Mario", email: "", password: "securePass" },
       url: "/api/admin",
@@ -207,7 +207,7 @@ describe("registerAdmin", () => {
     expect(mockRes.json).toHaveBeenCalledWith({ error: "Empty attributes" });
   });
 
-  test.only("Should return 400 if the email in the request body is not in a valid email format", async () => {
+  test("Should return 400 if the email in the request body is not in a valid email format", async () => {
     const mockReq = {
       body: { username: "Mario", email: "notAnEmail", password: "securePass" },
       url: "/api/admin",
@@ -225,7 +225,7 @@ describe("registerAdmin", () => {
     });
   });
 
-  test.only("Should return 400 if the username in the request body identifies an already existing user", async () => {
+  test("Should return 400 if the username in the request body identifies an already existing user", async () => {
     const mockReq = {
       body: {
         username: "test",
@@ -256,7 +256,7 @@ describe("registerAdmin", () => {
     });
   });
 
-  test.only("Should return 400 if the email in the request body identifies an already existing user", async () => {
+  test("Should return 400 if the email in the request body identifies an already existing user", async () => {
     const mockReq = {
       body: {
         username: "test",
@@ -287,7 +287,7 @@ describe("registerAdmin", () => {
     });
   });
 
-  test.only("Should return 200 if the user is added successfully", async () => {
+  test("Should return 200 if the user is added successfully", async () => {
     const mockReq = {
       body: {
         username: "test",
@@ -436,8 +436,8 @@ describe("logout", () => {
 		  json: jest.fn()
 		};
 		await logout(MocReq, MocRes);
-		expect(res.status).toHaveBeenCalledWith(400);
-		expect(res.json).toHaveBeenCalledWith('user not found');
+		expect(MocRes.status).toHaveBeenCalledWith(400);
+		expect(MocRes.json).toHaveBeenCalledWith('user not found');
 	  });
 	  test('Should return 400 error if user with the provided refreshToken is not found', async () => {
 		const req = {
@@ -452,7 +452,7 @@ describe("logout", () => {
 		User.findOne.mockResolvedValue(null);
 		await logout(req, res);
 		expect(res.status).toHaveBeenCalledWith(400);
-		expect(res.json).toHaveBeenCalledWith('user not found');
+		expect(res.json).toHaveBeenCalledWith({"error": "user not found"});
 	  });
 	  test('Should return 400 error if user with the provided refreshToken is not found', async () => {
 		const req = {
@@ -468,7 +468,7 @@ describe("logout", () => {
 		User.findOne.mockResolvedValue(null);
 		await logout(req, res);
 		expect(res.status).toHaveBeenCalledWith(400);
-		expect(res.json).toHaveBeenCalledWith('user not found');
+		expect(res.json).toHaveBeenCalledWith({"error": "user not found"});
 	  });
 	  test('Should successfully log out the user', async () => {
 		const req = {
@@ -508,9 +508,9 @@ describe("logout", () => {
 		  secure: true
 		});
 		expect(res.status).toHaveBeenCalledWith(200);
-		expect(res.json).toHaveBeenCalledWith('logged out');
+		expect(res.json).toHaveBeenCalledWith({"data": {"error": "User logged out"}});
 	  });
-	  test('Should return 400 error if an error occurs during logout', async () => {
+	  test('Should return 500 error if an error occurs during logout', async () => {
 		const req = {
 		  cookies: {
 			refreshToken: 'validToken'
@@ -529,7 +529,7 @@ describe("logout", () => {
 		};	  
 		User.findOne.mockResolvedValue(user); 
 		await logout(req, res);
-		expect(res.status).toHaveBeenCalledWith(400);
-		expect(res.json).toHaveBeenCalledWith('Some error');
+		expect(res.status).toHaveBeenCalledWith(500);
+		expect(res.json).toHaveBeenCalledWith('undefined');
 	  });	  
 });

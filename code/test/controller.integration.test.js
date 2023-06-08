@@ -247,7 +247,7 @@ describe("deleteCategory", () => {
           .delete("/api/categories")
           .set("Cookie",`accessToken=${adminAccessTokenValid}; refreshToken=${adminAccessTokenValid}`)
           .send({ username: "admin" , types : ["Food"]})
-          expect(response.body).toEqual({data : { message: expect.any(String)  }})
+          expect(response.body).toEqual({ error: expect.any(String) })
        })
        test("Should return 400 if the category is not exist in DataBase", async() =>{ 
         const user ={

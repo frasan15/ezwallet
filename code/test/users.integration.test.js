@@ -218,7 +218,130 @@ describe("getGroup", () => { });
 
 describe("addToGroup", () => {});
 
-describe("removeFromGroup", () => {});
+describe("removeFromGroup", () => {
+  test("Should return 401 unauthorized if not an admin or group member", async () => {
+    const user = {
+      username: "tester",
+      email: "tester@test.com",
+      password: "tester",
+      role: "Regular",
+      refreshToken: testerAccessTokenValid,
+    };
+    await User.create(user);
+    await Group.insertMany({name: "group1" , members: { email: "Neda@yahoo.com"}})
+    const response = await request(app)
+    .patch("/api/groups/group1/pull")
+    .set("Cookie",`accessToken=${testerAccessTokenValid}; refreshToken=${testerAccessTokenValid}`)
+    .send({ username: "tester" , emails: "Neda@polito.it" });
+    expect(response.status).toBe(401);
+    expect(response.body).toHaveProperty("error");
+  })
+  test("Should return 400 error if the request body does not contain all the necessary attributes", async()=>{
+    const user = {
+      username: "admin",
+      email: "admin@test.com",
+      password: "admin",
+      role: "admin",
+      refreshToken: adminAccessTokenValid,
+    };
+    await User.create(user);
+    await Group.insertMany({name: "group1" , members: { email: "Neda@yahoo.com"}})
+    const response = await request(app)
+    .patch("/api/groups/group1/pull")
+    .set("Cookie",`accessToken=${adminAccessTokenValid}; refreshToken=${adminAccessTokenValid}`)
+    .send({ username: "admin"});
+    expect(response.status).toBe(400);
+    expect(response.body).toHaveProperty("error");
+  })
+  test("Should return 400 error if the the format of email is not correct", async()=>{
+    const user = {
+      username: "admin",
+      email: "admin@test.com",
+      password: "admin",
+      role: "Admin",
+      refreshToken: adminAccessTokenValid,
+    };
+    await User.create(user);
+    await Group.insertMany({name: "group1" , members: { email: "Neda@yahoo.com"}})
+    const response = await request(app)
+    .patch("/api/groups/group1/pull")
+    .set("Cookie",`accessToken=${adminAccessTokenValid}; refreshToken=${adminAccessTokenValid}`)
+    .send({ username: "admin", emails: ["hjdfhkjdsh98898"]});
+    expect(response.status).toBe(400);
+    expect(response.body).toHaveProperty("error");
+  })
+  test ("400 error if the group name passed as a route parameter does not represent a group in the database " , async()=> {
+    const user = {
+      username: "admin",
+      email: "admin@test.com",
+      password: "admin",
+      role: "Admin",
+      refreshToken: adminAccessTokenValid,
+    };
+    await User.create(user);
+    await Group.insertMany({name: "group2" , members: { email: "Neda@yahoo.com"}})
+    const response = await request(app)
+    .patch("/api/groups/group1/pull")
+    .set("Cookie",`accessToken=${adminAccessTokenValid}; refreshToken=${adminAccessTokenValid}`)
+    .send({ username: "admin" , emails: "Neda@polito.it"});
+    expect(response.status).toBe(400);
+    expect(response.body).toHaveProperty("error");
+  })
+  test('Should return 400 error if at least one of the emails is an empty string' , async()=>{
+    const user = {
+      username: "admin",
+      email: "admin@test.com",
+      password: "admin",
+      role: "Admin",
+      refreshToken: adminAccessTokenValid,
+    };
+    await User.create(user);
+    await Group.insertMany({name: "group22" , members: [{ email: "Neda@yahoo.com"}]},
+    {name: "group2" , members: [{ email: "Neda@yahoo.com"}]})
+    const response = await request(app)
+    .patch("/api/groups/group1/pull")
+    .set("Cookie",`accessToken=${adminAccessTokenValid}; refreshToken=${adminAccessTokenValid}`)
+    .send({ username: "admin" , emails: " "});
+    expect(response.status).toBe(400);
+    expect(response.body).toHaveProperty("error");
+  })
+  test('Should return 401 when trying to remove a member who is not part of the group', async () => {
+    const user = {
+      username: "tester",
+      email: "tester@test.com",
+      password: "tester",
+      role: "regular",
+      refreshToken: testerAccessTokenValid,
+    };
+    await User.create(user);
+    await Group.insertMany({name: "group1" , members: [{ email: "Neda@yahoo.com"}]},
+    {name: "group2" , members: [{ email: "tester@test.com"}]})
+    const response = await request(app)
+    .patch("/api/groups/group1/remove")
+    .set("Cookie",`accessToken=${testerAccessTokenValid}; refreshToken=${testerAccessTokenValid}`)
+    .send({ username: "tester" , emails: "Neda2@yahoo.com"});
+    expect(response.status).toBe(401);
+    expect(response.body).toHaveProperty("error");
+  })
+  test('Should return 401 error if a member tries to remove themselves', async () => {
+    const user = {
+      username: "tester",
+      email: "tester@test.com",
+      password: "tester",
+      role: "regular",
+      refreshToken: testerAccessTokenValid,
+    };
+    await User.create(user);
+    await Group.insertMany({name: "group1" , members: [{email: "tester@test.com"}]},
+    {name: "group2" , members: [{ email: "Neda@yahoo.com"}]})
+    const response = await request(app)
+    .patch("/api/groups/group1/remove")
+    .set("Cookie",`accessToken=${testerAccessTokenValid}; refreshToken=${testerAccessTokenValid}`)
+    .send({ username: "tester" , emails: ["tester@test.com"]});
+    expect(response.status).toBe(400);
+    expect(response.body).toHaveProperty("error");
+    })
+  });
 
 describe("deleteUser", () => {
   test("should return 401 if user is not authorized", async () => {

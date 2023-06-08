@@ -64,7 +64,7 @@ jest.mock('../controllers/utils.js', () => ({
 }))
 
 describe("getUser", () => {
-  test.only("Returns requested user", async () => {
+  test("Returns requested user", async () => {
     const mockReq = {
       params: {
         username: "TestUser",
@@ -111,7 +111,7 @@ describe("getUser", () => {
     });
   });
 
-  test.only("Returns a 400 error if the username passed as the route parameter does not represent a user in the database", async () => {
+  test("Returns a 400 error if the username passed as the route parameter does not represent a user in the database", async () => {
     const mockReq = {
       params: {
         username: "TestUser",
@@ -145,7 +145,7 @@ describe("getUser", () => {
     expect(mockRes.json).toHaveBeenCalledWith({ error: expect.any(String) });
   });
 
-  test.only("Returns a 401 error if called by an authenticated user who is neither the same user as the one in the route parameter (authType = User) nor an admin (authType = Admin)", async () => {
+  test("Returns a 401 error if called by an authenticated user who is neither the same user as the one in the route parameter (authType = User) nor an admin (authType = Admin)", async () => {
     const mockReq = {
       params: {
         username: "TestUser",
@@ -195,7 +195,7 @@ describe("getUser", () => {
 });
 
 describe("getUsers", () => {
-  test.only("should return empty list if there are no users", async () => {
+  test("should return empty list if there are no users", async () => {
     //any time the `User.find()` method is called jest will replace its actual implementation with the one defined below
     jest.spyOn(User, "find").mockImplementation(() => []);
     verifyAuth.mockImplementation(() => {
@@ -207,7 +207,7 @@ describe("getUsers", () => {
     expect(response.body.data).toEqual([]);
   });
 
-  test.only("should retrieve list of all users", async () => {
+  test("should retrieve list of all users", async () => {
     const retrievedUsers = [
       {
         username: "test1",
@@ -250,7 +250,7 @@ describe("getUsers", () => {
     );
   });
 
-  test.only("should return 401 if user is not authorized", async () => {
+  test("should return 401 if user is not authorized", async () => {
     verifyAuth.mockImplementation(() => {
       return { authorized: false, cause: "Not authorized" };
     });
@@ -275,7 +275,7 @@ describe("getUsers", () => {
 });
 
 describe("createGroup", () => {
-  test.only('creation of the group successfully completed when the email of the user who calls the API is not inside the array', async () => {
+  test('creation of the group successfully completed when the email of the user who calls the API is not inside the array', async () => {
     const mockReq = {
         body: {
             name: "group1",
@@ -326,7 +326,7 @@ describe("createGroup", () => {
         refreshedTokenMessage: undefined})
 });
 
-test.only("Returns a 400 error if the request body does not contain all the necessary attributes", async() => {
+test("Returns a 400 error if the request body does not contain all the necessary attributes", async() => {
   const mockReq = {
     body: {
         memberEmails: ["francesco@polito.it", "santoro@polito.it"]
@@ -369,7 +369,7 @@ expect(mockRes.json).toHaveBeenCalledWith(
   {error: expect.any(String)})
 })
 
-test.only("Returns a 400 error if the group name passed in the request body is an empty string", async() => {
+test("Returns a 400 error if the group name passed in the request body is an empty string", async() => {
   const mockReq = {
     body: {
         name: "   ",
@@ -413,7 +413,7 @@ expect(mockRes.json).toHaveBeenCalledWith(
   {error: expect.any(String)})
 })
 
-test.only("Returns a 400 error if the group name passed in the request body represents an already existing group in the database", async() => {
+test("Returns a 400 error if the group name passed in the request body represents an already existing group in the database", async() => {
   const mockReq = {
     body: {
         name: "group1",
@@ -457,7 +457,7 @@ expect(mockRes.json).toHaveBeenCalledWith(
   {error: expect.any(String)})
 })
 
-test.only("Returns a 400 error if all the provided emails represent users that are already in a group or do not exist in the database", async() => {
+test("Returns a 400 error if all the provided emails represent users that are already in a group or do not exist in the database", async() => {
   const mockReq = {
     body: {
         name: "group1",
@@ -501,7 +501,7 @@ expect(mockRes.json).toHaveBeenCalledWith(
   {error: expect.any(String)})
 })
 
-test.only("Returns a 400 error if the user who calls the API is already in a group", async() => {
+test("Returns a 400 error if the user who calls the API is already in a group", async() => {
   const mockReq = {
     body: {
         name: "group1",
@@ -545,7 +545,7 @@ expect(mockRes.json).toHaveBeenCalledWith(
   {error: expect.any(String)})
 })
 
-test.only("Returns a 400 error if at least one of the member emails is not in a valid email format", async() => {
+test("Returns a 400 error if at least one of the member emails is not in a valid email format", async() => {
   const mockReq = {
     body: {
         name: "group1",
@@ -589,7 +589,7 @@ expect(mockRes.json).toHaveBeenCalledWith(
   {error: expect.any(String)})
 })
 
-test.only("Returns a 400 error if at least one of the member emails is an empty string", async() => {
+test("Returns a 400 error if at least one of the member emails is an empty string", async() => {
   const mockReq = {
     body: {
         name: "group1",
@@ -633,7 +633,7 @@ expect(mockRes.json).toHaveBeenCalledWith(
   {error: expect.any(String)})
 })
 
-test.only("Returns a 401 error if called by a user who is not authenticated (authType = Simple)", async() => {
+test("Returns a 401 error if called by a user who is not authenticated (authType = Simple)", async() => {
   const mockReq = {
     body: {
         name: "group1",
@@ -666,7 +666,7 @@ expect(mockRes.json).toHaveBeenCalledWith(
 
 describe("getGroups", () => {
   
-  test.only("should return empty list if there are no groups", async () => {
+  test("should return empty list if there are no groups", async () => {
     const mockReq = {
       body: {},
       cookies: {accessToken: "validAccessToken", refreshToken: "validRefreshToken"},
@@ -692,7 +692,7 @@ describe("getGroups", () => {
     expect(mockRes.json).toHaveBeenCalledWith({data: [], refreshedTokenMessage: ""})
     })
 
-  test.only("should retrieve list of all groups", async () => {
+  test("should retrieve list of all groups", async () => {
     const mockReq = {
       body: {},
       cookies: {accessToken: "validAccessToken", refreshToken: "validRefreshToken"},
@@ -721,7 +721,7 @@ describe("getGroups", () => {
       data: groups, refreshedTokenMessage: ""})
   })
   
-  test.only("Returns a 401 error if called by an authenticated user who is not an admin", async () => {
+  test("Returns a 401 error if called by an authenticated user who is not an admin", async () => {
     const mockReq = {
       body: {},
       cookies: {accessToken: "validAccessToken", refreshToken: "validRefreshToken"},
@@ -746,7 +746,7 @@ describe("getGroups", () => {
  })
 
 describe("getGroup", () => {
-  test.only("should retrieve list of the specified group", async () => {
+  test("should retrieve list of the specified group", async () => {
     const mockReq = {
       body: {},
       params: {name: "group20"},
@@ -774,7 +774,7 @@ describe("getGroup", () => {
     expect(mockRes.json).toHaveBeenCalledWith({data: groups, refreshedTokenMessage: ""})
     })
 
-  test.only("Returns a 400 error if the group name passed as a route parameter does not represent a group in the database", async () => {
+  test("Returns a 400 error if the group name passed as a route parameter does not represent a group in the database", async () => {
     const mockReq = {
       body: {},
       params: {name: "group20"},
@@ -798,7 +798,7 @@ describe("getGroup", () => {
     expect(mockRes.status).toHaveBeenCalledWith(400)
     })
 
-  test.only("Returns a 401 error if called by an authenticated user who is neither part of the group (authType = Group) nor an admin (authType = Admin)", async () => {
+  test("Returns a 401 error if called by an authenticated user who is neither part of the group (authType = Group) nor an admin (authType = Admin)", async () => {
     const mockReq = {
       body: {},
       params: {name: "group20"},
@@ -828,7 +828,7 @@ describe("getGroup", () => {
  })
 
 describe("addToGroup", () => {
-  test.only("It must add the requested members to the specified group", async () => {
+  test("It must add the requested members to the specified group", async () => {
     const mockReq = {
       body: {emails: ["pietroblue@email.com", "antoniomarco@email.com"]},
       params: {name: "group451"},
@@ -876,7 +876,7 @@ describe("addToGroup", () => {
     expect(mockRes.json).toHaveBeenCalledWith({data, refreshedTokenMessage: ""})
     })
 
-  test.only("Returns a 400 error if the group name passed as a route parameter does not represent a group in the database", async () => {
+  test("Returns a 400 error if the group name passed as a route parameter does not represent a group in the database", async () => {
     const mockReq = {
       body: {emails: ["pietroblue@email.com", "antoniomarco@email.com"]},
       params: {name: "group451"},
@@ -902,7 +902,7 @@ describe("addToGroup", () => {
     expect(mockRes.json).toHaveBeenCalledWith({error: expect.any(String)})
     })
 
-  test.only("Returns a 400 error if all the provided emails represent users that are already in a group or do not exist in the database", async () => {
+  test("Returns a 400 error if all the provided emails represent users that are already in a group or do not exist in the database", async () => {
     const mockReq = {
       body: {emails: ["pietroblue@email.com", "antoniomarco@email.com"]},
       params: {name: "group451"},
@@ -943,7 +943,7 @@ describe("addToGroup", () => {
     expect(mockRes.json).toHaveBeenCalledWith({error: expect.any(String)})
     })
   
-  test.only("Returns a 400 error if at least one of the member emails is not in a valid email format", async () => {
+  test("Returns a 400 error if at least one of the member emails is not in a valid email format", async () => {
     const mockReq = {
       body: {emails: ["pietroblueemail.com", "antoniomarco@email.com"]},
       params: {name: "group451"},
@@ -983,7 +983,7 @@ describe("addToGroup", () => {
     expect(mockRes.json).toHaveBeenCalledWith({error: expect.any(String)})
     })
 
-  test.only("Returns a 401 error if called by an authenticated user who is not part of the group (authType = Group) if the route is `api/groups/:name/add`", async () => {
+  test("Returns a 401 error if called by an authenticated user who is not part of the group (authType = Group) if the route is `api/groups/:name/add`", async () => {
     const mockReq = {
       body: {emails: ["pietroblue@email.com", "antoniomarco@email.com"]},
       params: {name: "group451"},
@@ -1021,7 +1021,7 @@ describe("addToGroup", () => {
  })
 
  describe("removeFromGroup", () => {
-  test.only("Should remove members from group as admin", async () => {
+  test("Should remove members from group as admin", async () => {
     const req = {
       params: {
         name: "group1",
@@ -1071,7 +1071,7 @@ describe("addToGroup", () => {
   expect(res.status).toHaveBeenCalledWith(200);
 });
 
-test.only("Should return 401 unauthorized if not an admin or group member", async () => {
+test("Should return 401 unauthorized if not an admin or group member", async () => {
   const req = {
     params: {
       name: "group1",
@@ -1091,7 +1091,7 @@ test.only("Should return 401 unauthorized if not an admin or group member", asyn
   expect(res.status).toHaveBeenCalledWith(401);
   expect(res.json).toHaveBeenCalledWith({error: expect.any(String)});
 });
-test.only("Should return 400 error if the request body does not contain all the necessary attributes", async()=>{
+test("Should return 400 error if the request body does not contain all the necessary attributes", async()=>{
   const req = {
     params: {
       name: "group1",
@@ -1133,7 +1133,7 @@ expect(res.status).toHaveBeenCalledWith(400)
 expect(res.json).toHaveBeenCalledWith({error: expect.any(String)})
 })
 
-test.only('Should return 400 error if at least one of the emails is an empty string' , async()=>{
+test('Should return 400 error if at least one of the emails is an empty string' , async()=>{
   const req = {
     body: {
       emails : [" " ,"saadat@yahoo.com"]
@@ -1152,19 +1152,19 @@ test.only('Should return 400 error if at least one of the emails is an empty str
   const MockparamsGroup = {
     name : "group1"
   }
-  Group.findOne.mockResolvedValue(MockparamsGroup)
+  Group.findOne.mockResolvedValue(1)
   verifyAuth.mockImplementation(() => {
     return {authorized: true, cause: "Authorized"}
 })
 
 await removeFromGroup(req,res)
-expect(res.status).toHaveBeenCalled(400)
+expect(res.status).toHaveBeenCalledWith(400);
 expect(res.json).toHaveBeenCalledWith({error: expect.any(String)});
 })
 })
 
 describe("deleteUser", () => {
-  test.only("should return 401 if user is not authorized", async () => {
+  test("should return 401 if user is not authorized", async () => {
     verifyAuth.mockImplementation(() => {
       return { authorized: false, cause: "Not authorized" };
     });
@@ -1190,7 +1190,7 @@ describe("deleteUser", () => {
     expect(mockRes.json).toHaveBeenCalledWith({ error: expect.any(String) });
   });
 
-  test.only("should return 400 if email is missing, empty or invalid", async () => {
+  test("should return 400 if email is missing, empty or invalid", async () => {
     verifyAuth.mockImplementation(() => {
       return { authorized: true, cause: "Authorized" };
     });
@@ -1232,7 +1232,7 @@ describe("deleteUser", () => {
     }
   });
 
-  test.only("should return 400 if user does not exist in database", async () => {
+  test("should return 400 if user does not exist in database", async () => {
     verifyAuth.mockImplementation(() => {
       return { authorized: true, cause: "Authorized" };
     });
@@ -1268,7 +1268,7 @@ describe("deleteUser", () => {
     });
   });
 
-  test.only("should return 400 if user is an admin", async () => {
+  test("should return 400 if user is an admin", async () => {
     verifyAuth.mockImplementation(() => {
       return { authorized: true, cause: "Authorized" };
     });
@@ -1303,7 +1303,7 @@ describe("deleteUser", () => {
     });
   });
 
-  test.only("should return 200 if user and his transactions are deleted, with one user in a group", async () => {
+  test("should return 200 if user and his transactions are deleted, with one user in a group", async () => {
     verifyAuth.mockImplementation(() => {
       return { authorized: true, cause: "Authorized" };
     });
@@ -1375,12 +1375,12 @@ describe("deleteGroup", () => {
     });
     await deleteGroup(req, res);
     Group.findOne.mockResolvedValue({ name: "Family" });
-    expect(Group.deleteOne).mockResolvedValue({ name: "family" });
+    Group.deleteOne.mockResolvedValue({ name: "family" })
     expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalled({ data: { error: expect.any(String) } });
+    expect(res.json).toHaveBeenCalledWith({ data: { error: expect.any(String) } });
   });
 
-  test.only("Should Return 401, if User is not Authorized", async () => {
+  test("Should Return 401, if User is not Authorized", async () => {
     const req = {
       body: {
         name: "Family",
@@ -1401,7 +1401,7 @@ describe("deleteGroup", () => {
     expect(res.status).toHaveBeenCalledWith(401);
     expect(res.json).toHaveBeenCalledWith({ error: expect.any(String) });
   });
-  test.only("Should return 400 if the request body does not contain all the necessary attributes", async () => {
+  test("Should return 400 if the request body does not contain all the necessary attributes", async () => {
     const req = {
       body: {},
       cookies: { accessToken: "aaaaa", refreshToken: "bbbbb" },
@@ -1421,7 +1421,7 @@ describe("deleteGroup", () => {
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith({ error: expect.any(String) });
   });
-  test.only("Should Returns a 400 error if the name passed in the request body is an empty string", async () => {
+  test("Should Returns a 400 error if the name passed in the request body is an empty string", async () => {
     const req = {
       body: {
         name: " ",
@@ -1460,8 +1460,8 @@ describe("deleteGroup", () => {
     verifyAuth.mockImplementation(() => {
       return { authorized: true, cause: "Authorized" };
     });
+    Group.findOne.mockResolvedValue(null)
     await deleteGroup(Mocreq, Mockres);
-    Group.findOne.mockResolvedValue(0);
     expect(Mockres.status).toHaveBeenCalledWith(400);
     expect(Mockres.json).toHaveBeenCalledWith({ error: expect.any(String) });
   });

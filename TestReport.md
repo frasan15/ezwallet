@@ -113,7 +113,19 @@
 | should return 400 if user does not exist in database ||||
 | should return 400 if user is an admin ||||
 | should return 200 if user and his transactions are deleted, with one user in a group ||||
-
+| Logout | Logout | unit, integration | WB statement coverage |
+| Should return 400 error if refreshToken cookie is not provided ||||
+| Should return 400 error if user with the provided refreshToken is not found ||||
+| Should return 400 error if user with the provided refreshToken is not found ||||
+| Should successfully log out the user ||||
+| Should return 400 error if an error occurs during logout ||||
+| updateCategory | updateCategory | unit, integration | WB statement coverage |
+| Return 401 error if called by an authenticated user who is not an admin ||||
+| Return 400 error if Request body does not contain all the necessary attributes ||||
+| Return 400 error if request body is an empty string||||
+| Return 400 error if the type of category in request params is not exist in the database ||||
+| Return 400 error if the type of category passed in the request body is already existing in the database ||||
+|Category Updated succesfully ||||
 
 
 # Coverage

@@ -13,6 +13,7 @@ import {
   deleteTransaction,
   getAllTransactions,
   getCategories,
+  updateCategory,
   getTransactionsByGroup,
   getTransactionsByUser,
   getTransactionsByUserByCategory,
@@ -347,23 +348,28 @@ describe("updateCategory", () => {
           }
       }
       verifyAuth.mockImplementation(() => { return {authorized: true, cause: "Authorized"}})
+
       const updateResult = { modifiedCount: 2 };
-      transactions.updateMany.mockResolvedValue(updateResult);
-      await updateCategory(req, res);
-      expect(transactions.updateMany).toHaveBeenCalledWith(
-  { type: req.params.type },
-  { $set: { type: req.body.type } }
-);
-const expectedData = {
-  count: updateResult.modifiedCount,
-  message: "successful updating",
-};
-const expectedResponse = {
-  data: expectedData,
-  refreshedTokenMessage: res.locals.refreshedTokenMessage,
-};
-expect(res.json).toHaveBeenCalledWith(expectedResponse);
-  })
+  categories.updateOne.mockResolvedValue(updateResult);
+
+  await updateCategory(req, res);
+
+  expect(categories.findOneAndUpdate).toHaveBeenCalledWith(
+    { type: req.params.type },
+    { type: req.body.type, color: req.body.color },
+    { new: true }
+  );
+
+  const expectedData = {
+    count: updateResult.modifiedCount,
+    message: "successful updating",
+  };
+  const expectedResponse = {
+    data: expectedData,
+    refreshedTokenMessage: res.locals.refreshedTokenMessage,
+  };
+  expect(res.json).toHaveBeenCalledWith(expectedResponse);
+});
 });
 
 describe("deleteCategory", () => {

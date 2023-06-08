@@ -114,11 +114,10 @@
 | should return 400 if user is an admin ||||
 | should return 200 if user and his transactions are deleted, with one user in a group ||||
 | Logout | Logout | unit, integration | WB statement coverage |
-| Should return 400 error if refreshToken cookie is not provided ||||
-| Should return 400 error if user with the provided refreshToken is not found ||||
-| Should return 400 error if user with the provided refreshToken is not found ||||
-| Should successfully log out the user ||||
-| Should return 400 error if an error occurs during logout ||||
+| Return 400 error if refreshToken cookie is not provided ||||
+| Return 400 error if user with the provided refreshToken is not found ||||
+| successfully log out the user ||||
+| Return 400 error if an error occurs during logout ||||
 | updateCategory | updateCategory | unit, integration | WB statement coverage |
 | Return 401 error if called by an authenticated user who is not an admin ||||
 | Return 400 error if Request body does not contain all the necessary attributes ||||
@@ -126,6 +125,51 @@
 | Return 400 error if the type of category in request params is not exist in the database ||||
 | Return 400 error if the type of category passed in the request body is already existing in the database ||||
 |Category Updated succesfully ||||
+| deleteCategory | deleteCategory | unit, integration | WB statement coverage |
+| Category Deleted successfully ||||
+| Return 401 Error if user is Unauthorized ||||
+| Return 400 Error if only one category is left ||||
+| Return 400 Error if Request body is Empty ||||
+| Return 400 if the category is not exist in DataBase ||||
+| Retrieve last category if N equals T ||||
+| Return 400 error if the request body does not contain all the necessary attributes ||||
+| removeFromGroup | removeFromGroup | unit, integration | WB statement coverage |
+| Remove members from group as admin ||||
+| Return 401 unauthorized if not an admin or group member ||||
+| Return 400 error if the request body does not contain all the necessary attributes ||||
+|Return 400 error if the group name passed as a route parameter does not represent a group in the database ||||
+| Return 400 error if at least one of the emails is an empty string ||||
+| deleteGroup | deleteGroup | unit, integration | WB statement coverage |
+| Group has been successfully deleted ||||
+| Return 400, if User is not Authorized ||||
+| Return 400 if the request body does not contain all the necessary attributes  ||||
+| Returns a 400 error if the name passed in the request body is an empty string ||||
+| Return  400 error if group is not exist ||||
+| verifyAuth | verifyAuth | unit, integration | WB statement coverage |
+| Return unauthorized if one token is missing ||||
+| Return unauthorized if one token is missing information ||||
+| Return unauthorized if one token is missing information ||||
+| Return unauthorized if one token are from different user ||||
+| Return simple authorization ||||
+| Return user authorization ||||
+| Return user authorization with expired date ||||
+| Return invalid user ||||
+| Return admin authorization ||||
+| Return admin authorization with expired date ||||
+| Return invalid admin ||||
+| Return group authorization ||||
+| Return group authorization with expired date ||||
+| Return user not in group ||||
+| Return user authorization ||||
+| Suggest to perform login ||||
+| Should raise error ||||
+
+
+
+
+
+
+
 
 
 # Coverage
@@ -145,8 +189,18 @@
 || Should return 400 if the username in the request body identifies an already existing user |
 || Should return 400 if the email in the request body identifies an already existing user |
 || Should return 200 if the user is added successfully |
-| FR12 login | |
-| FR13 logout | |
+| FR12 login |  |
+||  |
+||  |
+||  |
+||  |
+||  |
+||  |
+||  |
+| FR13 logout | Should return 400 error if refreshToken cookie is not provided  |
+|| Should return 400 error if user with the provided refreshToken is not found |
+|| Should return 400 error if an error occurs during logout |
+|| Should successfully log out the user  |
 | FR14 registerAdmin | Should return 400 if request body does not contain all the necessary attributes |
 || Should return 400 if at least one of the parameters in the request body is an empty string |
 || Should return 400 if the email in the request body is not in a valid email format |
@@ -170,8 +224,16 @@
 | FR22 getGroups | |
 | FR23 getGroup | |
 | FR24 addToGroup | |
-| FR26 removeFromGroup | |
-| FR28 deleteGroup | |
+| FR26 removeFromGroup | Should remove members from group as admin |
+|| Should return 401 unauthorized if not an admin or group member  |
+||  Should return 400 error if the request body does not contain all the necessary attributes |
+|| Should return 400 error if the group name passed as a route parameter does not represent a group in the database |
+||  Should return 400 error if at least one of the emails is an empty string  |
+| FR28 deleteGroup |Should delete group successfuly |
+|| Should Return 401, if User is not Authorized |
+|| Should return 400 if the request body does not contain all the necessary attributes |
+|| Should Returns a 400 error if the name passed in the request body is an empty string |
+|| Should Return  400 error if group is not exist |
 |  FR3 Manage | |
 | FR31 
 | FR32 getAllTransactions | should return 401 if the user is not authorized|
@@ -208,8 +270,22 @@
 || Returns a 401 error if called by an authenticated user who is not an admin (authType = Admin)|
 | FR4 Manage | |
 | FR41 createCategory | |
-| FR42 updateCategory | |
-| FR43 deleteCategory | |
+| FR42 updateCategory | Should return 401 error if called by an authenticated user who is not an admin |
+|| Should 400 error if the request body does not contain all the necessary attributes  |
+|| Should return 400 error if request body is an empty string  |
+|| Should return 400 error if the type of category in request params is not exist in the database |
+|| Should return 400 error if the type of category passed in the request body is already existing in the database |
+||  Should Updated Category succesfully |
+| FR43 deleteCategory | Should delete category successfully |
+|| Should return 401 Error if user is Unauthorized |
+|| Should return 400 Error if only one category is left |
+|| Should return 400 Error if Request body is Empty |
+|| Should return 400 if the category is not exist in DataBase |
+||  Should return 400 error if the request body does not contain all the necessary attributes |
+||  Should retrieve last category if N equals T |
+|| |
+|| |
+|| |
 | FR44 getCategories | |
 
 

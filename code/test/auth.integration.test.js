@@ -141,8 +141,45 @@ describe('login', () => {
     });
 });
 
-describe('logout', () => { 
-    test('Dummy test, change it', () => {
-        expect(true).toBe(true);
-    });
+describe("logout", () => {
+	const testerAccessTokenValid = jwt.sign(
+		{
+			email: "test@example.com",
+			username: "test",
+			role: "Regular",
+		},
+		process.env.ACCESS_KEY,
+		{ expiresIn: "1y" }
+	);
+
+	test("should log out a user and return success message", async () => {
+		await User.insertMany([
+			{ username: "test", email: "test@example.com", password: "test", refreshToken: testerAccessTokenValid },
+		]);
+
+		const response = await request(app)
+			.get("/api/logout")
+			.set("Cookie", `accessToken=${testerAccessTokenValid}; refreshToken=${testerAccessTokenValid}`);
+
+		expect(response.status).toBe(200);
+		expect(response.body).toEqual({ data: { error: "User logged out" } });
+	});
+
+	test("should return an error if user is not found", async () => {
+		const testerAccessTokenEmpty = jwt.sign({}, process.env.ACCESS_KEY, { expiresIn: "1y" });
+
+		const response = await request(app)
+			.get("/api/logout")
+			.set("Cookie", `accessToken=${testerAccessTokenEmpty}; refreshToken=${testerAccessTokenEmpty}`);
+
+		expect(response.status).toBe(400);
+		expect(response.body).toEqual({ error: "user not found" });
+	});
+
+	test("should return an error if refresh token is not found", async () => {
+		const response = await request(app).get("/api/logout").set("Cookie", `accessToken=${testerAccessTokenValid}`);
+
+		expect(response.status).toBe(400);
+		expect(response.body).toEqual({ error: "user not found" });
+	});
 });

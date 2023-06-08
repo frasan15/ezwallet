@@ -49,10 +49,436 @@ import {
   });
   
   describe("verifyAuth", () => {
-    test.only("Dummy test, change it", () => {
-      expect(true).toBe(true);
+    test("should return unauthorized if one token is missing", () => {
+      const mockReq = {
+        cookies: { accessToken: "testerAccessTokenValid" },
+      };
+      const mockRes = {};
+  
+      const response = verifyAuth(mockReq, mockRes, { authType: "User", username: "tester" });
+      expect(response).toEqual({ authorized: false, cause: "Unauthorized" });
     });
-  });
+  
+    test("should return unauthorized if one token is missing information", () => {
+      const mockReq = {
+        cookies: { accessToken: "testerAccessTokenValid", refreshToken: "testerRefreshTokenValid" },
+      };
+      const mockRes = {};
+      const decodedAccessToken = {
+        email: "tester@test.com",
+        role: "Regular",
+      };
+  
+      jwt.verify.mockReturnValueOnce(decodedAccessToken);
+  
+      const response = verifyAuth(mockReq, mockRes, { authType: "User", username: "tester" });
+      expect(response).toEqual({ authorized: false, cause: "Token is missing information" });
+    });
+  
+    test("should return unauthorized if one token is missing information", () => {
+      const mockReq = {
+        cookies: { accessToken: "testerAccessTokenValid", refreshToken: "testerRefreshTokenValid" },
+      };
+      const mockRes = {};
+      const decodedAccessToken = {
+        email: "tester@test.com",
+        username: "tester",
+        role: "Regular",
+      };
+      const decodedRefreshToken = {
+        email: "tester@test.com",
+        role: "Regular",
+      };
+  
+      jwt.verify.mockReturnValueOnce(decodedAccessToken);
+      jwt.verify.mockReturnValueOnce(decodedRefreshToken);
+  
+      const response = verifyAuth(mockReq, mockRes, { authType: "User", username: "tester" });
+      expect(response).toEqual({ authorized: false, cause: "Token is missing information" });
+    });
+  
+    test("should return unauthorized if one token are from different user", () => {
+      const mockReq = {
+        cookies: { accessToken: "testerAccessTokenValid", refreshToken: "testerRefreshTokenValid" },
+      };
+      const mockRes = {};
+      const decodedAccessToken = {
+        email: "tester@test.com",
+        username: "tester",
+        role: "Regular",
+      };
+      const decodedRefreshToken = {
+        email: "tester@test.com",
+        username: "tester2",
+        role: "Regular",
+      };
+  
+      jwt.verify.mockReturnValueOnce(decodedAccessToken);
+      jwt.verify.mockReturnValueOnce(decodedRefreshToken);
+  
+      const response = verifyAuth(mockReq, mockRes, { authType: "User", username: "tester" });
+      expect(response).toEqual({ authorized: false, cause: "Mismatched users" });
+    });
+  
+    test("should return simple authorization", () => {
+      const mockReq = {
+        cookies: { accessToken: "testerAccessTokenValid", refreshToken: "testerRefreshTokenValid" },
+      };
+      const mockRes = {};
+      const decodedAccessToken = {
+        email: "tester@test.com",
+        username: "tester",
+        role: "Regular",
+      };
+      const decodedRefreshToken = {
+        email: "tester@test.com",
+        username: "tester",
+        role: "Regular",
+      };
+  
+      jwt.verify.mockReturnValueOnce(decodedAccessToken);
+      jwt.verify.mockReturnValueOnce(decodedRefreshToken);
+  
+      const response = verifyAuth(mockReq, mockRes, { authType: "Simple" });
+      expect(response).toEqual({ authorized: true, cause: "Authorized" });
+    });
+  
+    test("should return user authorization", () => {
+      const mockReq = {
+        cookies: { accessToken: "testerAccessTokenValid", refreshToken: "testerRefreshTokenValid" },
+      };
+      const mockRes = {};
+      const decodedAccessToken = {
+        email: "tester@test.com",
+        username: "tester",
+        role: "Regular",
+      };
+      const decodedRefreshToken = {
+        email: "tester@test.com",
+        username: "tester",
+        role: "Regular",
+      };
+  
+      jwt.verify.mockReturnValueOnce(decodedAccessToken);
+      jwt.verify.mockReturnValueOnce(decodedRefreshToken);
+  
+      const response = verifyAuth(mockReq, mockRes, { authType: "User", username: "tester" });
+      expect(response).toEqual({ authorized: true, cause: "Authorized" });
+    });
+  
+    test("should return user authorization with expired date", () => {
+      const mockReq = {
+        cookies: { accessToken: "testerAccessTokenValid", refreshToken: "testerRefreshTokenValid" },
+      };
+      const mockRes = {};
+      const decodedAccessToken = {
+        email: "tester@test.com",
+        username: "tester",
+        role: "Regular",
+        exp: 0,
+      };
+      const decodedRefreshToken = {
+        email: "tester@test.com",
+        username: "tester",
+        role: "Regular",
+      };
+  
+      jwt.verify.mockReturnValueOnce(decodedAccessToken);
+      jwt.verify.mockReturnValueOnce(decodedRefreshToken);
+  
+      const response = verifyAuth(mockReq, mockRes, { authType: "User", username: "tester" });
+      expect(response).toEqual({ authorized: true, cause: "Authorized" });
+    });
+  
+    test("should return invalid user", () => {
+      const mockReq = {
+        cookies: { accessToken: "testerAccessTokenValid", refreshToken: "testerRefreshTokenValid" },
+      };
+      const mockRes = {};
+      const decodedAccessToken = {
+        email: "tester@test.com",
+        username: "tester",
+        role: "Regular",
+      };
+      const decodedRefreshToken = {
+        email: "tester@test.com",
+        username: "tester",
+        role: "Regular",
+      };
+  
+      jwt.verify.mockReturnValueOnce(decodedAccessToken);
+      jwt.verify.mockReturnValueOnce(decodedRefreshToken);
+  
+      const response = verifyAuth(mockReq, mockRes, { authType: "User", username: "tester2" });
+      expect(response).toEqual({ authorized: false, cause: "username does not match the related user's token" });
+    });
+  
+    test("should return admin authorization", () => {
+      const mockReq = {
+        cookies: { accessToken: "testerAccessTokenValid", refreshToken: "testerRefreshTokenValid" },
+      };
+      const mockRes = {};
+      const decodedAccessToken = {
+        email: "tester@test.com",
+        username: "tester",
+        role: "Admin",
+      };
+      const decodedRefreshToken = {
+        email: "tester@test.com",
+        username: "tester",
+        role: "Admin",
+      };
+  
+      jwt.verify.mockReturnValueOnce(decodedAccessToken);
+      jwt.verify.mockReturnValueOnce(decodedRefreshToken);
+  
+      const response = verifyAuth(mockReq, mockRes, { authType: "Admin", username: "tester" });
+      expect(response).toEqual({ authorized: true, cause: "Authorized" });
+    });
+  
+    test("should return admin authorization with expired date", () => {
+      const mockReq = {
+        cookies: { accessToken: "testerAccessTokenValid", refreshToken: "testerRefreshTokenValid" },
+      };
+      const mockRes = {};
+      const decodedAccessToken = {
+        email: "tester@test.com",
+        username: "tester",
+        role: "Admin",
+        exp: 0,
+      };
+      const decodedRefreshToken = {
+        email: "tester@test.com",
+        username: "tester",
+        role: "Admin",
+      };
+  
+      jwt.verify.mockReturnValueOnce(decodedAccessToken);
+      jwt.verify.mockReturnValueOnce(decodedRefreshToken);
+  
+      const response = verifyAuth(mockReq, mockRes, { authType: "Admin", username: "tester" });
+      expect(response).toEqual({ authorized: true, cause: "Authorized" });
+    });
+  
+    test("should return invalid admin", () => {
+      const mockReq = {
+        cookies: { accessToken: "testerAccessTokenValid", refreshToken: "testerRefreshTokenValid" },
+      };
+      const mockRes = {};
+      const decodedAccessToken = {
+        email: "tester@test.com",
+        username: "tester",
+        role: "Regular",
+      };
+      const decodedRefreshToken = {
+        email: "tester@test.com",
+        username: "tester",
+        role: "Regular",
+      };
+  
+      jwt.verify.mockReturnValueOnce(decodedAccessToken);
+      jwt.verify.mockReturnValueOnce(decodedRefreshToken);
+  
+      const response = verifyAuth(mockReq, mockRes, { authType: "Admin", username: "tester2" });
+      expect(response).toEqual({ authorized: false, cause: "function reserved for admins only" });
+    });
+  
+    test("should return group authorization", () => {
+      const mockReq = {
+        cookies: { accessToken: "testerAccessTokenValid", refreshToken: "testerRefreshTokenValid" },
+      };
+      const mockRes = {};
+      const decodedAccessToken = {
+        email: "tester@test.com",
+        username: "tester",
+        role: "Regular",
+      };
+      const decodedRefreshToken = {
+        email: "tester@test.com",
+        username: "tester",
+        role: "Regular",
+      };
+  
+      jwt.verify.mockReturnValueOnce(decodedAccessToken);
+      jwt.verify.mockReturnValueOnce(decodedRefreshToken);
+  
+      const response = verifyAuth(mockReq, mockRes, {
+        authType: "Group",
+        username: "tester",
+        emails: ["tester@test.com"],
+      });
+      expect(response).toEqual({ authorized: true, cause: "Authorized" });
+    });
+  
+    test("should return group authorization with expired date", () => {
+      const mockReq = {
+        cookies: { accessToken: "testerAccessTokenValid", refreshToken: "testerRefreshTokenValid" },
+      };
+      const mockRes = {};
+      const decodedAccessToken = {
+        email: "tester@test.com",
+        username: "tester",
+        role: "Regular",
+        exp: 0,
+      };
+      const decodedRefreshToken = {
+        email: "tester@test.com",
+        username: "tester",
+        role: "Regular",
+      };
+  
+      jwt.verify.mockReturnValueOnce(decodedAccessToken);
+      jwt.verify.mockReturnValueOnce(decodedRefreshToken);
+  
+      const response = verifyAuth(mockReq, mockRes, {
+        authType: "Group",
+        username: "tester",
+        emails: ["tester@test.com"],
+      });
+      expect(response).toEqual({ authorized: true, cause: "Authorized" });
+    });
+  
+    test("should return user not in group", () => {
+      const mockReq = {
+        cookies: { accessToken: "testerAccessTokenValid", refreshToken: "testerRefreshTokenValid" },
+      };
+      const mockRes = {};
+      const decodedAccessToken = {
+        email: "tester@test.com",
+        username: "tester",
+        role: "Regular",
+      };
+      const decodedRefreshToken = {
+        email: "tester@test.com",
+        username: "tester",
+        role: "Regular",
+      };
+  
+      jwt.verify.mockReturnValueOnce(decodedAccessToken);
+      jwt.verify.mockReturnValueOnce(decodedRefreshToken);
+  
+      const response = verifyAuth(mockReq, mockRes, {
+        authType: "Group",
+        username: "tester2",
+        emails: ["wrong@test.com"],
+      });
+      expect(response).toEqual({ authorized: false, cause: "unauthorized, you are not part of the requested group" });
+    });
+  
+    test("should return user authorization", () => {
+      const mockReq = {
+        cookies: { accessToken: "testerAccessTokenValid", refreshToken: "testerRefreshTokenValid" },
+      };
+      const mockRes = {
+        cookie: jest.fn(),
+        locals: {
+          refreshTokenMessage: {},
+        },
+      };
+      const decodedAccessToken = {
+        email: "tester@test.com",
+        username: "tester",
+        role: "Regular",
+      };
+      const decodedRefreshToken = {
+        email: "tester@test.com",
+        username: "tester",
+        role: "Regular",
+      };
+  
+      const error = new Error("Token expired");
+      error.name = "TokenExpiredError";
+  
+      jest.spyOn(jwt, "verify").mockImplementationOnce(() => {
+        throw error;
+      });
+      jwt.verify.mockReturnValueOnce(decodedRefreshToken);
+      jwt.sign.mockReturnValueOnce(decodedAccessToken);
+  
+      const response = verifyAuth(mockReq, mockRes, { authType: "User", username: "tester" });
+      expect(response).toEqual({ authorized: true, cause: "Authorized" });
+    });
+  
+    test("should raise error and suggest to perform login", () => {
+      const mockReq = {
+        cookies: { accessToken: "testerAccessTokenValid", refreshToken: "testerRefreshTokenValid" },
+      };
+      const mockRes = { cookie: jest.fn() };
+      const decodedAccessToken = {
+        email: "tester@test.com",
+        username: "tester",
+        role: "Regular",
+      };
+      const decodedRefreshToken = {
+        email: "tester@test.com",
+        username: "tester",
+        role: "Regular",
+      };
+  
+      const error = new Error("Token expired");
+      error.name = "TokenExpiredError";
+  
+      jest.spyOn(jwt, "verify").mockImplementation(() => {
+        throw error;
+      });
+  
+      const response = verifyAuth(mockReq, mockRes, { authType: "User", username: "tester" });
+      expect(response).toEqual({ authorized: false, cause: "Perform login again" });
+    });
+  
+    test("should raise error", () => {
+      const mockReq = {
+        cookies: { accessToken: "testerAccessTokenValid", refreshToken: "testerRefreshTokenValid" },
+      };
+      const mockRes = { cookie: jest.fn() };
+      const decodedAccessToken = {
+        email: "tester@test.com",
+        username: "tester",
+        role: "Regular",
+      };
+      const decodedRefreshToken = {
+        email: "tester@test.com",
+        username: "tester",
+        role: "Regular",
+      };
+  
+      const error = new Error("Token expired");
+      error.name = "TokenExpiredError";
+  
+      jest.spyOn(jwt, "verify").mockImplementationOnce(() => {
+        throw error;
+      });
+      jest.spyOn(jwt, "verify").mockImplementationOnce(() => {
+        throw new Error();
+      });
+  
+      const response = verifyAuth(mockReq, mockRes, { authType: "User", username: "tester" });
+      expect(response).toEqual({ authorized: false, cause: "Error" });
+    });
+  
+    test("should raise error", () => {
+      const mockReq = {
+        cookies: { accessToken: "testerAccessTokenValid", refreshToken: "testerRefreshTokenValid" },
+      };
+      const mockRes = { cookie: jest.fn() };
+      const decodedAccessToken = {
+        email: "tester@test.com",
+        username: "tester",
+        role: "Regular",
+      };
+      const decodedRefreshToken = {
+        email: "tester@test.com",
+        username: "tester",
+        role: "Regular",
+      };
+      jest.spyOn(jwt, "verify").mockImplementationOnce(() => {
+        throw new Error();
+      });
+  
+      const response = verifyAuth(mockReq, mockRes, { authType: "User", username: "tester" });
+      expect(response).toEqual({ authorized: false, cause: "Error" });
+    });
+  }) ;
   
   describe("handleAmountFilterParams", () => {
     test.only("Function called with either min and/or max should return a filter object with mix and/or max attributes", () => {

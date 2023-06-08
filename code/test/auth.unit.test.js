@@ -437,7 +437,7 @@ describe("logout", () => {
 		};
 		await logout(MocReq, MocRes);
 		expect(MocRes.status).toHaveBeenCalledWith(400);
-		expect(MocRes.json).toHaveBeenCalledWith('user not found');
+		expect(MocRes.json).toHaveBeenCalledWith({"error": "user not found"});
 	  });
 	  test('Should return 400 error if user with the provided refreshToken is not found', async () => {
 		const req = {
@@ -530,6 +530,6 @@ describe("logout", () => {
 		User.findOne.mockResolvedValue(user); 
 		await logout(req, res);
 		expect(res.status).toHaveBeenCalledWith(500);
-		expect(res.json).toHaveBeenCalledWith('undefined');
+		expect(res.json).toHaveBeenCalledWith(undefined);
 	  });	  
 });

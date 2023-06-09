@@ -820,7 +820,7 @@ describe("getGroup", () => {
 
  })
 
-describe("addToGroup", () => {
+ describe("addToGroup", () => {
   test("It must add the requested members to the specified group", async () => {
     const mockReq = {
       body: {emails: ["pietroblue@email.com", "antoniomarco@email.com"]},
@@ -978,39 +978,181 @@ describe("addToGroup", () => {
 
   test("Returns a 401 error if called by an authenticated user who is not part of the group (authType = Group) if the route is `api/groups/:name/add`", async () => {
     const mockReq = {
-      body: {emails: ["pietroblue@email.com", "antoniomarco@email.com"]},
-      params: {name: "group451"},
-      cookies: {accessToken: "validAccessToken", refreshToken: "validRefreshToken"},
-      url: "/api/groups/:name/add"
-    }
+      body: { emails: ["pietroblue@email.com", "antoniomarco@email.com"] },
+      params: { name: "group451" },
+      cookies: {
+        accessToken: "validAccessToken",
+        refreshToken: "validRefreshToken",
+      },
+      url: "/api/groups/:name/add",
+    };
 
     const mockRes = {
       status: jest.fn().mockReturnThis(),
       json: jest.fn(),
       locals: {
-        refreshedTokenMessage: ""
-      }
-    }
-
-    const group = {name: 'group451',
-    members: [
-      {
-        email: 'franciosissimo@polito.it'
+        refreshedTokenMessage: "",
       },
-      {
-        email: 'admin@polito.it'
-      }
-    ]}
+    };
 
-    verifyAuth.mockImplementation(() => ({authorized: false, cause: "Unauthorized"}))
-    
-    Group.findOne = jest.fn().mockResolvedValue(group)
-    
+    const group = {
+      name: "group451",
+      members: [
+        {
+          email: "franciosissimo@polito.it",
+        },
+        {
+          email: "admin@polito.it",
+        },
+      ],
+    };
+
+    verifyAuth.mockImplementation(() => ({
+      authorized: false,
+      cause: "Unauthorized",
+    }));
+
+    Group.findOne = jest.fn().mockResolvedValue(group);
+
     await addToGroup(mockReq, mockRes);
 
-    expect(mockRes.status).toHaveBeenCalledWith(401)
-    expect(mockRes.json).toHaveBeenCalledWith({error: expect.any(String)})
-    })
+    expect(mockRes.status).toHaveBeenCalledWith(401);
+    expect(mockRes.json).toHaveBeenCalledWith({ error: expect.any(String) });
+  });
+
+  test("Returns a 401 error if called by an authenticated user who is not an admin (authType = Admin) if the route is `api/groups/:name/insert``", async () => {
+    const mockReq = {
+      body: { emails: ["pietroblue@email.com", "antoniomarco@email.com"] },
+      params: { name: "group451" },
+      cookies: {
+        accessToken: "validAccessToken",
+        refreshToken: "validRefreshToken",
+      },
+      url: "/api/groups/:name/insert",
+    };
+
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshedTokenMessage: "",
+      },
+    };
+
+    const group = {
+      name: "group451",
+      members: [
+        {
+          email: "franciosissimo@polito.it",
+        },
+        {
+          email: "admin@polito.it",
+        },
+      ],
+    };
+
+    verifyAuth.mockImplementation(() => ({
+      authorized: false,
+      cause: "Unauthorized",
+    }));
+
+    Group.findOne = jest.fn().mockResolvedValue(group);
+
+    await addToGroup(mockReq, mockRes);
+
+    expect(mockRes.status).toHaveBeenCalledWith(401);
+    expect(mockRes.json).toHaveBeenCalledWith({ error: "Unauthorized" });
+  });
+
+  test("Returns a 400 error if the request body does not contain all the necessary attributes", async () => {
+    const mockReq = {
+      body: {},
+      params: { name: "group451" },
+      cookies: {
+        accessToken: "validAccessToken",
+        refreshToken: "validRefreshToken",
+      },
+      url: "/api/groups/:name/insert",
+    };
+
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshedTokenMessage: "",
+      },
+    };
+
+    const group = {
+      name: "group451",
+      members: [
+        {
+          email: "franciosissimo@polito.it",
+        },
+        {
+          email: "admin@polito.it",
+        },
+      ],
+    };
+
+    verifyAuth.mockImplementation(() => ({
+      authorized: true,
+      cause: "Authorized",
+    }));
+
+    Group.findOne = jest.fn().mockResolvedValue(group);
+
+    await addToGroup(mockReq, mockRes);
+
+    expect(mockRes.status).toHaveBeenCalledWith(400);
+    expect(mockRes.json).toHaveBeenCalledWith({ error: "Missing parameters" });
+  });
+
+  test("Returns a 400 error if at least one of the member emails is an empty string", async () => {
+    const mockReq = {
+      body: { emails: ["   ", "antoniomarco@email.com"] },
+      params: { name: "group451" },
+      cookies: {
+        accessToken: "validAccessToken",
+        refreshToken: "validRefreshToken",
+      },
+      url: "/api/groups/:name/insert",
+    };
+
+    const mockRes = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      locals: {
+        refreshedTokenMessage: "",
+      },
+    };
+
+    const group = {
+      name: "group451",
+      members: [
+        {
+          email: "franciosissimo@polito.it",
+        },
+        {
+          email: "admin@polito.it",
+        },
+      ],
+    };
+
+    verifyAuth.mockImplementation(() => ({
+      authorized: true,
+      cause: "Authorized",
+    }));
+
+    Group.findOne = jest.fn().mockResolvedValue(group);
+
+    await addToGroup(mockReq, mockRes);
+
+    expect(mockRes.status).toHaveBeenCalledWith(400);
+    expect(mockRes.json).toHaveBeenCalledWith({
+      error: "Empty email is not a valid email",
+    });
+  });
  })
 
  describe("removeFromGroup", () => {

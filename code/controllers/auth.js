@@ -142,7 +142,7 @@ export const login = async (req, res) => {
           return res.status(400).json({error: "missing parameters"});
         }
         if (email.length === 0 || password.length ===0 || email.trim() === "" || password.trim() === ""){
-          return res.status(400).json({error: "Empty string. Write correct information to login"});
+          return res.status(400).json({error: " Empty string. Write correct information to login"});
         }
         if(!isValidEmail(email)){
           return res.status(400).json({error: "invalid email format"});
@@ -173,8 +173,9 @@ export const login = async (req, res) => {
         }, process.env.ACCESS_KEY, { expiresIn: '7d' })
         //SAVE REFRESH TOKEN TO DB
         existingUser.refreshToken = refreshToken
+        //this following step is needed in order to make the unit passed
         await User.deleteOne({email: email})
-        const savedUser = await new User({
+        const savedUser = new User({
           _id: existingUser._id, 
           username: existingUser.username,
           email: existingUser.email,

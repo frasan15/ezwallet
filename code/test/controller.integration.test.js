@@ -164,30 +164,187 @@ describe("createCategory", () => {
       expect(response.body).toHaveProperty("error", "empty string not acceptable")
 });
 
-    test("returns a 401 error if called by an authenticated user who is not an admin (authType = Admin)", async() => {
-        await User.insertMany([{
-            username: "francesco",
-            email: "mario.red@email.com",
-            password: "password",
-            refreshToken: testerAccessTokenValid
-          }])
-        
-          await categories.insertMany([{
-            type: "family",
-            color: "blue"
-          }])
+describe("createCategory", () => {
+  test("category correctly created", async () => {
+    await User.insertMany([
+      {
+        username: "francesco",
+        email: "mario.red@email.com",
+        password: "password",
+        refreshToken: testerAccessTokenValid,
+      },
+      {
+        username: "santoro",
+        email: "luigi.red@email.com",
+        password: "admin",
+        refreshToken: adminAccessTokenValid,
+        role: "Admin",
+      },
+    ]);
 
-          const response = await request(app)
-          .post("/api/categories")
-          .set("Cookie", `accessToken=${testerAccessTokenValid}; refreshToken=${testerAccessTokenValid}`)
-          .send({type: "friends", color: "yellow"})
+    await categories.insertMany([
+      {
+        type: "family",
+        color: "blue",
+      },
+    ]);
 
-          expect(response.status).toBe(401)
-          expect(response.body).toHaveProperty("error", "Unauthorized")  
+    const response = await request(app)
+      .post("/api/categories")
+      .set(
+        "Cookie",
+        `accessToken=${adminAccessTokenValid}; refreshToken=${adminAccessTokenValid}`
+      )
+      .send({ type: "friends", color: "yellow" });
 
-          
-    })
-})
+    expect(response.status).toBe(200);
+    expect(response.body.data).toHaveProperty("type", "friends");
+    expect(response.body.data).toHaveProperty("color", "yellow");
+  });
+
+  test("Returns a 400 error if the type of category passed in the request body represents an already existing category in the database", async () => {
+    await User.insertMany([
+      {
+        username: "francesco",
+        email: "mario.red@email.com",
+        password: "password",
+        refreshToken: testerAccessTokenValid,
+      },
+      {
+        username: "santoro",
+        email: "luigi.red@email.com",
+        password: "admin",
+        refreshToken: adminAccessTokenValid,
+        role: "Admin",
+      },
+    ]);
+
+    await categories.insertMany([
+      {
+        type: "family",
+        color: "blue",
+      },
+    ]);
+
+    const response = await request(app)
+      .post("/api/categories")
+      .set(
+        "Cookie",
+        `accessToken=${adminAccessTokenValid}; refreshToken=${adminAccessTokenValid}`
+      )
+      .send({ type: "family", color: "yellow" });
+
+    expect(response.status).toBe(400);
+    expect(response.body).toHaveProperty("error", "category already exist");
+  });
+
+  test("Returns a 400 error if the request body does not contain all the necessary attributes", async () => {
+    await User.insertMany([
+      {
+        username: "francesco",
+        email: "mario.red@email.com",
+        password: "password",
+        refreshToken: testerAccessTokenValid,
+      },
+      {
+        username: "santoro",
+        email: "luigi.red@email.com",
+        password: "admin",
+        refreshToken: adminAccessTokenValid,
+        role: "Admin",
+      },
+    ]);
+
+    await categories.insertMany([
+      {
+        type: "family",
+        color: "blue",
+      },
+    ]);
+
+    const response = await request(app)
+      .post("/api/categories")
+      .set(
+        "Cookie",
+        `accessToken=${adminAccessTokenValid}; refreshToken=${adminAccessTokenValid}`
+      )
+      .send({ type: "friends" });
+
+    expect(response.status).toBe(400);
+    expect(response.body).toHaveProperty(
+      "error",
+      "Missing or wrong parameters"
+    );
+  });
+
+  test("eturns a 400 error if at least one of the parameters in the request body is an empty string", async () => {
+    await User.insertMany([
+      {
+        username: "francesco",
+        email: "mario.red@email.com",
+        password: "password",
+        refreshToken: testerAccessTokenValid,
+      },
+      {
+        username: "santoro",
+        email: "luigi.red@email.com",
+        password: "admin",
+        refreshToken: adminAccessTokenValid,
+        role: "Admin",
+      },
+    ]);
+
+    await categories.insertMany([
+      {
+        type: "family",
+        color: "blue",
+      },
+    ]);
+
+    const response = await request(app)
+      .post("/api/categories")
+      .set(
+        "Cookie",
+        `accessToken=${adminAccessTokenValid}; refreshToken=${adminAccessTokenValid}`
+      )
+      .send({ type: "friends", color: "  " });
+
+    expect(response.status).toBe(400);
+    expect(response.body).toHaveProperty(
+      "error",
+      "empty string not acceptable"
+    );
+  });
+
+  test("returns a 401 error if called by an authenticated user who is not an admin (authType = Admin)", async () => {
+    await User.insertMany([
+      {
+        username: "francesco",
+        email: "mario.red@email.com",
+        password: "password",
+        refreshToken: testerAccessTokenValid,
+      },
+    ]);
+
+    await categories.insertMany([
+      {
+        type: "family",
+        color: "blue",
+      },
+    ]);
+
+    const response = await request(app)
+      .post("/api/categories")
+      .set(
+        "Cookie",
+        `accessToken=${testerAccessTokenValid}; refreshToken=${testerAccessTokenValid}`
+      )
+      .send({ type: "friends", color: "yellow" });
+
+    expect(response.status).toBe(401);
+    expect(response.body).toHaveProperty("error", "Unauthorized");
+  });
+});
 
 describe("updateCategory", () => { 
   test('Should return 401 error if called by an authenticated user who is not an admin', async() => {
@@ -403,46 +560,54 @@ describe("deleteCategory", () => {
     })
 })
 
-describe("getCategories", () => { 
-    test("categories correctly returned", async() => {
-        await User.insertMany([{
-            username: "francesco",
-            email: "mario.red@email.com",
-            password: "password",
-            refreshToken: testerAccessTokenValid
-          }])
-        
-          await categories.insertMany([{
-            type: "family",
-            color: "blue"
-          }, {
-            type: "cousins",
-            color: "red"
-          }])
+describe("getCategories", () => {
+  test("categories correctly returned", async () => {
+    await User.insertMany([
+      {
+        username: "francesco",
+        email: "mario.red@email.com",
+        password: "password",
+        refreshToken: testerAccessTokenValid,
+      },
+    ]);
 
-          const response = await request(app)
-          .get("/api/categories")
-          .set("Cookie", `accessToken=${testerAccessTokenValid}; refreshToken=${testerAccessTokenValid}`)
-          .send()
+    await categories.insertMany([
+      {
+        type: "family",
+        color: "blue",
+      },
+      {
+        type: "cousins",
+        color: "red",
+      },
+    ]);
 
-          expect(response.status).toBe(200)
-          expect(response.body.data[0]).toHaveProperty("type", "family")
-          expect(response.body.data[0]).toHaveProperty("color", "blue")
-          expect(response.body.data[1]).toHaveProperty("type", "cousins")
-          expect(response.body.data[1]).toHaveProperty("color", "red")
-    });
+    const response = await request(app)
+      .get("/api/categories")
+      .set(
+        "Cookie",
+        `accessToken=${testerAccessTokenValid}; refreshToken=${testerAccessTokenValid}`
+      )
+      .send();
 
-    test("Returns a 401 error if called by a user who is not authenticated (authType = Simple)", async() => {
-        const cookie = "invalidToken"
-        const response = await request(app)
-        .get("/api/categories")
-        .set("Cookie", `accessToken=${cookie}; refreshToken=${cookie}`)
-        .send()
+    expect(response.status).toBe(200);
+    expect(response.body.data[0]).toHaveProperty("type", "family");
+    expect(response.body.data[0]).toHaveProperty("color", "blue");
+    expect(response.body.data[1]).toHaveProperty("type", "cousins");
+    expect(response.body.data[1]).toHaveProperty("color", "red");
+  });
 
-        expect(response.status).toBe(401)
-        expect(response.body).toHaveProperty("error", "Unauthorized")
-    });
-})
+  test("Returns a 401 error if called by a user who is not authenticated (authType = Simple)", async () => {
+    const cookie = "invalidToken";
+    const response = await request(app)
+      .get("/api/categories")
+      .set("Cookie", `accessToken=${cookie}; refreshToken=${cookie}`)
+      .send();
+
+    expect(response.status).toBe(401);
+    expect(response.body).toHaveProperty("error", "Unauthorized");
+  });
+});
 
 describe("createTransaction", () => {
   test("should return 401 if the user is not authorized", async () => {

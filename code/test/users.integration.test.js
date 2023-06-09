@@ -44,6 +44,12 @@ const testerAccessTokenValid = jwt.sign(
   { expiresIn: "1y" }
 );
 
+const testerAccessTokenExpired = jwt.sign({
+  email: "tester@test.com",
+  username: "tester",
+  role: "Regular"
+}, process.env.ACCESS_KEY, { expiresIn: '0s' })
+
 /**
  * After all test cases have been executed the database is deleted.
  * This is done so that subsequent executions of the test suite start with an empty database.
@@ -152,7 +158,6 @@ describe("getUser", () => {
           username: "tester",
         },
       });
-    console.log(response.error);
     expect(response.status).toBe(200);
     expect(response.body.data.username).toEqual(user.username);
     expect(response.body.data.email).toEqual(user.email);
@@ -958,4 +963,255 @@ describe("removeFromGroup", () => {
   expect(response.status).toBe(400);
   expect(response.body).toEqual({ error: expect.any(String) })
   })
+});
+
+describe("deleteUser", () => {
+  test("should return 401 if user is not authorized", async () => {
+    const user = {
+      username: "tester",
+      email: "tester@test.com",
+      password: "tester",
+      refreshToken: testerAccessTokenValid,
+    };
+    await User.create(user);
+    const response = await request(app)
+      .delete("/api/users")
+      .set(
+        "Cookie",
+        `accessToken=${testerAccessTokenValid}; refreshToken=${testerAccessTokenValid}`
+      )
+      .send({ email: user.email });
+    expect(response.status).toBe(401);
+    expect(response.body).toHaveProperty("error");
+  });
+
+  test("should return 400 if email is missing, empty or invalid", async () => {
+    const user = {
+      username: "tester",
+      email: "tester@test.com",
+      password: "tester",
+      role: "Admin",
+      refreshToken: adminAccessTokenValid,
+    };
+    await User.create(user);
+    const wrongEmails = [null, "", "test", "test@", "test@test", "test@test."];
+    for (let i = 0; i < wrongEmails.length; i++) {
+      const response = await request(app)
+        .delete("/api/users")
+        .set(
+          "Cookie",
+          `accessToken=${adminAccessTokenValid}; refreshToken=${adminAccessTokenValid}`
+        )
+        .send({ email: wrongEmails[i] });
+      expect(response.status).toBe(400);
+      expect(response.body).toHaveProperty("error");
+    }
+  });
+
+  test("should return 400 if user does not exist in database", async () => {
+    const user = {
+      username: "tester",
+      email: "tester@test.com",
+      password: "tester",
+      role: "Admin",
+      refreshToken: adminAccessTokenValid,
+    };
+    await User.create(user);
+    const response = await request(app)
+      .delete("/api/users")
+      .set(
+        "Cookie",
+        `accessToken=${adminAccessTokenValid}; refreshToken=${adminAccessTokenValid}`
+      )
+      .send({ email: "anotheremail@test.com" });
+    expect(response.status).toBe(400);
+    expect(response.body).toHaveProperty("error");
+    expect(response.body.error).toEqual(
+      "Email does not represent a user in the database"
+    );
+  });
+
+  test("should return 400 if user is not an admin", async () => {
+    const user = {
+      username: "tester",
+      email: "tester@test.com",
+      password: "tester",
+      role: "Admin",
+      refreshToken: adminAccessTokenValid,
+    };
+    await User.create(user);
+    const response = await request(app)
+      .delete("/api/users")
+      .set(
+        "Cookie",
+        `accessToken=${adminAccessTokenValid}; refreshToken=${adminAccessTokenValid}`
+      )
+      .send({ email: user.email });
+    expect(response.status).toBe(400);
+    expect(response.body).toHaveProperty("error");
+    expect(response.body.error).toEqual("User to be deleted cannot be admin");
+  });
+
+  test("should return 200 if user and his transactions are deleted, with one user in a group", async () => {
+    const usersArray = [
+      {
+        username: "tester",
+        email: "tester@test.com",
+        password: "tester",
+        role: "Regular",
+        refreshToken: testerAccessTokenValid,
+      },
+      {
+        username: "admin",
+        email: "admin@email.com",
+        password: "admin",
+        refreshToken: adminAccessTokenValid,
+        role: "Admin",
+      },
+    ];
+    await User.insertMany(usersArray);
+    const transactionsArray = [
+      {
+        username: "tester",
+        type: "food",
+        amount: 20,
+      },
+      {
+        username: "tester",
+        type: "groceries",
+        amount: 100,
+      },
+      {
+        username: "admin",
+        type: "food",
+        amount: 89,
+      },
+    ];
+    const userTester = await User.findOne({ username: "tester" });
+    await transactions.insertMany(transactionsArray);
+    const group = {
+      name: "testGroup",
+      members: [
+        {
+          email: userTester.email,
+          user: userTester._id,
+        },
+      ],
+    };
+    await Group.create(group);
+    const response = await request(app)
+      .delete("/api/users")
+      .set(
+        "Cookie",
+        `accessToken=${adminAccessTokenValid}; refreshToken=${adminAccessTokenValid}`
+      )
+      .send({ email: userTester.email });
+    expect(response.status).toBe(200);
+    expect(response.body.data.deletedTransaction).toEqual(2);
+    expect(response.body.data.deletedFromGroup).toEqual(true);
+    const deletedGroup = await Group.findOne({ name: "testGroup" });
+    expect(deletedGroup).toEqual(null);
+  });
+});
+
+describe("deleteGroup", () => {
+  test("Group has been successfully deleted", async () => {
+    const user = {
+      username: "admin",
+      email: "admin@email.com",
+      password: "admin",
+      role: "Admin",
+      refreshToken: adminAccessTokenValid,
+    };
+    await User.create(user);
+    await Group.insertMany(
+      { name: "Family", members: { email: "email1@polito.com" } },
+      { name: "group2", members: { email: "email2@polito.it" } }
+    );
+    const response = await request(app)
+      .delete("/api/groups")
+      .set(
+        "Cookie",
+        `accessToken=${adminAccessTokenValid}; refreshToken=${adminAccessTokenValid}`
+      )
+      .send({ username: "admin", name: "Family" });
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ data: { error: expect.any(String) } });
+  });
+  test("Should Return 400, if User is not Authorized", async () => {
+    const user = {
+      username: "tester",
+      email: "tester@email.com",
+      password: "tester",
+      role: "regular",
+      refreshToken: testerAccessTokenValid,
+    };
+    await User.create(user);
+    const response = await request(app)
+      .delete("/api/groups")
+      .send({ username: "tester", types: ["Family"] });
+    expect(response.status).toBe(401);
+    expect(response.body).toEqual({ error: expect.any(String) });
+  });
+  test("Should return 400 if the request body does not contain all the necessary attributes", async () => {
+    const user = {
+      username: "admin",
+      email: "admin@email.com",
+      password: "admin",
+      role: "Admin",
+      refreshToken: adminAccessTokenValid,
+    };
+    await User.create(user);
+    const response = await request(app)
+      .delete("/api/groups")
+      .set(
+        "Cookie",
+        `accessToken=${adminAccessTokenValid}; refreshToken=${adminAccessTokenValid}`
+      )
+      .send({ username: "admin" });
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({ error: expect.any(String) });
+  });
+  test("Should Returns a 400 error if the name passed in the request body is an empty string", async () => {
+    const user = {
+      username: "admin",
+      email: "admin@email.com",
+      password: "admin",
+      role: "Admin",
+      refreshToken: adminAccessTokenValid,
+    };
+    await User.create(user);
+    const response = await request(app)
+      .delete("/api/groups")
+      .set(
+        "Cookie",
+        `accessToken=${adminAccessTokenValid}; refreshToken=${adminAccessTokenValid}`
+      )
+      .send({ username: "admin", name: " " });
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({ error: expect.any(String) });
+  });
+  test("Should Return  400 error if group is not exist ", async () => {
+    const user = {
+      username: "admin",
+      email: "admin@email.com",
+      password: "admin",
+      role: "Admin",
+      refreshToken: adminAccessTokenValid,
+    };
+    await User.create(user);
+    await Group.insertMany({
+      name: "Family",
+      members: { email: "email1@polito.com" },
+    });
+    const response = await request(app)
+      .delete("/api/groups")
+      .set(
+        "Cookie",
+        `accessToken=${adminAccessTokenValid}; refreshToken=${adminAccessTokenValid}`
+      )
+      .send({ username: "admin", name: "group1" });
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({ error: expect.any(String) });
+  });
 });

@@ -142,7 +142,7 @@ export const login = async (req, res) => {
           return res.status(400).json({error: "missing parameters"});
         }
         if (email.length === 0 || password.length ===0 || email.trim() === "" || password.trim() === ""){
-          return res.status(400).json({error: " Empty string. Write correct information to login"});
+          return res.status(400).json({error: "Empty string. Write correct information to login"});
         }
         if(!isValidEmail(email)){
           return res.status(400).json({error: "invalid email format"});

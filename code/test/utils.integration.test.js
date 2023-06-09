@@ -3,6 +3,50 @@ import {
   verifyAuth,
   handleAmountFilterParams,
 } from "../controllers/utils";
+import mongoose from 'mongoose';
+import { User } from '../models/User.js';
+
+
+beforeAll(async () => {
+  const dbName = "testingDatabaseAuth";
+  const url = `${process.env.MONGO_URI}/${dbName}`;
+
+  await mongoose.connect(url, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  });
+});
+
+afterAll(async () => {
+  await mongoose.connection.db.dropDatabase();
+  await mongoose.connection.close();
+});
+
+beforeEach(async () => {
+  await User.deleteMany({});
+  jest.clearAllMocks();
+});
+
+const adminAccessTokenValid = jwt.sign(
+  {
+    email: "admin@email.com",
+    //id: existingUser.id, The id field is not required in any check, so it can be omitted
+    username: "admin",
+    role: "Admin",
+  },
+  process.env.ACCESS_KEY,
+  { expiresIn: "1y" }
+);
+
+const testerAccessTokenValid = jwt.sign(
+  {
+    email: "tester@test.com",
+    username: "tester",
+    role: "Regular",
+  },
+  process.env.ACCESS_KEY,
+  { expiresIn: "1y" }
+);
 
 describe("handleDateFilterParams", () => {
   test(`Returns a filter object which contains data attribute if only "date" is present in query`, () => {

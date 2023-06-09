@@ -50,118 +50,157 @@ username: "tester",
 role: "Regular"
 }, process.env.ACCESS_KEY, { expiresIn: '0s' })
 
-describe("createCategory", () => { 
-    test("category correctly created", async() => {
-        await User.insertMany([{
-            username: "francesco",
-            email: "mario.red@email.com",
-            password: "password",
-            refreshToken: testerAccessTokenValid
-          }, {
-            username: "santoro",
-            email: "luigi.red@email.com",
-            password: "admin",
-            refreshToken: adminAccessTokenValid,
-            role: "Admin"
-          }]);
-        
-          await categories.insertMany([{
-            type: "family",
-            color: "blue"
-          }])
-
-          const response = await request(app)
-          .post("/api/categories")
-          .set("Cookie", `accessToken=${adminAccessTokenValid}; refreshToken=${adminAccessTokenValid}`)
-          .send({type: "friends", color: "yellow"})
-
-          expect(response.status).toBe(200)
-          expect(response.body.data).toHaveProperty("type", "friends")
-          expect(response.body.data).toHaveProperty("color", "yellow")
-    });
-
-    test("Returns a 400 error if the type of category passed in the request body represents an already existing category in the database", async() => {
-        await User.insertMany([{
-            username: "francesco",
-            email: "mario.red@email.com",
-            password: "password",
-            refreshToken: testerAccessTokenValid
-          }, {
-            username: "santoro",
-            email: "luigi.red@email.com",
-            password: "admin",
-            refreshToken: adminAccessTokenValid,
-            role: "Admin"
-          }]);
-        
-          await categories.insertMany([{
-            type: "family",
-            color: "blue"
-          }])
-
-          const response = await request(app)
-          .post("/api/categories")
-          .set("Cookie", `accessToken=${adminAccessTokenValid}; refreshToken=${adminAccessTokenValid}`)
-          .send({type: "family", color: "yellow"})
-
-          expect(response.status).toBe(400)
-          expect(response.body).toHaveProperty("error", "category already exist")
-    });
-
-    test("Returns a 400 error if the request body does not contain all the necessary attributes", async() => {
-      await User.insertMany([{
-          username: "francesco",
-          email: "mario.red@email.com",
-          password: "password",
-          refreshToken: testerAccessTokenValid
-        }, {
-          username: "santoro",
-          email: "luigi.red@email.com",
-          password: "admin",
-          refreshToken: adminAccessTokenValid,
-          role: "Admin"
-        }]);
-      
-        await categories.insertMany([{
-          type: "family",
-          color: "blue"
-        }])
-
-        const response = await request(app)
-        .post("/api/categories")
-        .set("Cookie", `accessToken=${adminAccessTokenValid}; refreshToken=${adminAccessTokenValid}`)
-        .send({type: "friends"})
-
-        expect(response.status).toBe(400)
-        expect(response.body).toHaveProperty("error", "Missing or wrong parameters")
-  });
-
-  test("eturns a 400 error if at least one of the parameters in the request body is an empty string", async() => {
-    await User.insertMany([{
+describe("createCategory", () => {
+  test("category correctly created", async () => {
+    await User.insertMany([
+      {
         username: "francesco",
         email: "mario.red@email.com",
         password: "password",
-        refreshToken: testerAccessTokenValid
-      }, {
+        refreshToken: testerAccessTokenValid,
+      },
+      {
         username: "santoro",
         email: "luigi.red@email.com",
         password: "admin",
         refreshToken: adminAccessTokenValid,
-        role: "Admin"
-      }]);
-    
-      await categories.insertMany([{
+        role: "Admin",
+      },
+    ]);
+
+    await categories.insertMany([
+      {
         type: "family",
-        color: "blue"
-      }])
+        color: "blue",
+      },
+    ]);
 
-      const response = await request(app)
+    const response = await request(app)
       .post("/api/categories")
-      .set("Cookie", `accessToken=${adminAccessTokenValid}; refreshToken=${adminAccessTokenValid}`)
-      .send({type: "friends", color: "  "})
+      .set(
+        "Cookie",
+        `accessToken=${adminAccessTokenValid}; refreshToken=${adminAccessTokenValid}`
+      )
+      .send({ type: "friends", color: "yellow" });
 
-      expect(response.status).toBe(400)
-      expect(response.body).toHaveProperty("error", "empty string not acceptable")
+    expect(response.status).toBe(200);
+    expect(response.body.data).toHaveProperty("type", "friends");
+    expect(response.body.data).toHaveProperty("color", "yellow");
+  });
+
+  test("Returns a 400 error if the type of category passed in the request body represents an already existing category in the database", async () => {
+    await User.insertMany([
+      {
+        username: "francesco",
+        email: "mario.red@email.com",
+        password: "password",
+        refreshToken: testerAccessTokenValid,
+      },
+      {
+        username: "santoro",
+        email: "luigi.red@email.com",
+        password: "admin",
+        refreshToken: adminAccessTokenValid,
+        role: "Admin",
+      },
+    ]);
+
+    await categories.insertMany([
+      {
+        type: "family",
+        color: "blue",
+      },
+    ]);
+
+    const response = await request(app)
+      .post("/api/categories")
+      .set(
+        "Cookie",
+        `accessToken=${adminAccessTokenValid}; refreshToken=${adminAccessTokenValid}`
+      )
+      .send({ type: "family", color: "yellow" });
+
+    expect(response.status).toBe(400);
+    expect(response.body).toHaveProperty("error", "category already exist");
+  });
+
+  test("Returns a 400 error if the request body does not contain all the necessary attributes", async () => {
+    await User.insertMany([
+      {
+        username: "francesco",
+        email: "mario.red@email.com",
+        password: "password",
+        refreshToken: testerAccessTokenValid,
+      },
+      {
+        username: "santoro",
+        email: "luigi.red@email.com",
+        password: "admin",
+        refreshToken: adminAccessTokenValid,
+        role: "Admin",
+      },
+    ]);
+
+    await categories.insertMany([
+      {
+        type: "family",
+        color: "blue",
+      },
+    ]);
+
+    const response = await request(app)
+      .post("/api/categories")
+      .set(
+        "Cookie",
+        `accessToken=${adminAccessTokenValid}; refreshToken=${adminAccessTokenValid}`
+      )
+      .send({ type: "friends" });
+
+    expect(response.status).toBe(400);
+    expect(response.body).toHaveProperty(
+      "error",
+      "Missing or wrong parameters"
+    );
+  });
+
+  test("returns a 400 error if at least one of the parameters in the request body is an empty string", async () => {
+    await User.insertMany([
+      {
+        username: "francesco",
+        email: "mario.red@email.com",
+        password: "password",
+        refreshToken: testerAccessTokenValid,
+      },
+      {
+        username: "santoro",
+        email: "luigi.red@email.com",
+        password: "admin",
+        refreshToken: adminAccessTokenValid,
+        role: "Admin",
+      },
+    ]);
+
+    await categories.insertMany([
+      {
+        type: "family",
+        color: "blue",
+      },
+    ]);
+
+    const response = await request(app)
+      .post("/api/categories")
+      .set(
+        "Cookie",
+        `accessToken=${adminAccessTokenValid}; refreshToken=${adminAccessTokenValid}`
+      )
+      .send({ type: "friends", color: "  " });
+
+    expect(response.status).toBe(400);
+    expect(response.body).toHaveProperty(
+      "error",
+      "empty string not acceptable"
+    );
+  });
 });
 
 });
@@ -1732,7 +1771,6 @@ describe("deleteTransactions", () => {
       username: "tester",
     });
     const transactionsToDeleteIds = transactionsToDelete.map(transaction => transaction._id);
-    console.log
     const response = await request(app)
       .delete("/api/transactions")
       .set(

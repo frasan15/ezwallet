@@ -110,7 +110,7 @@ export const updateCategory = async (req, res) => {
       refreshedTokenMessage: res.locals.refreshedTokenMessage,
     };
 
-    return res.json(result);
+    return res.status(200).json(result);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -197,7 +197,7 @@ export const deleteCategory = async (req, res) => {
       data: { message: "categories correctly deleted", count: count },
       refreshedTokenMessage: res.locals.refreshedTokenMessage,
     };
-    return res.json(result);
+    return res.status(200).json(result);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -401,7 +401,7 @@ const commonTransactionsByUser = async (req, res, filter) => {
     { $project: { categories_info: 0, __v: 0 } },
   ]);
   if (allTransactions.length == 0) {
-    return res.json({
+    return res.status(200).json({
       data: [],
       message: "No transactions found",
     });

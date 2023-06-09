@@ -400,6 +400,10 @@ or do not exist in the database
 export const removeFromGroup = async (req, res) => {
   try {
     const name = req.params.name;
+    if (!req.body) {
+      return res.status(400).json({ error: "Missing or wrong parameters" });
+    }
+    const { emails } = req.body;
     const groupCurrent = await Group.findOne({ name: name });
     if (!groupCurrent) {
       return res.status(400).json({ error: "the group does not exist" });
@@ -434,11 +438,6 @@ export const removeFromGroup = async (req, res) => {
       return res.status(401).json({ error: "unauthorized" });
     }
 
-    const { emails } = req.body;
-    if (!emails) {
-      return res.status(400).json({ error: "Missing or wrong parameters" });
-    }
-
     if (groupCurrent.members.length === 1) {
       return res
         .status(400)
@@ -452,16 +451,15 @@ export const removeFromGroup = async (req, res) => {
     const members = groupCurrent.members;
 
     for (const email of emails) {
+      if (email.trim() === "") {
+        return res
+        .status(400)
+        .json({ error: "empty string is not a valid email" });
+      }
       if (!isValidEmail(email)) {
         return res
           .status(400)
           .json({ error: `the email ${email} is not in a valid format` });
-      }
-
-      if (email.trim() === "") {
-        return res
-          .status(400)
-          .json({ error: "empty string is not a valid email" });
       }
     }
 
@@ -491,7 +489,6 @@ export const removeFromGroup = async (req, res) => {
 
     const list = await Group.findOne({ name: name }); // I need the current group updated
     const remainingMembers = list.members.map((a) => a.email);
-
     if (
       emails.length === membersNotFound.length ||
       emails.length === notInGroup.length ||
@@ -504,8 +501,7 @@ export const removeFromGroup = async (req, res) => {
             "the requested members do not exist or they do not belong to the specified group",
         });
     }
-
-    return res.json({
+    return res.status(200).json({
       data: {
         group: {
           name: name,
@@ -514,7 +510,7 @@ export const removeFromGroup = async (req, res) => {
         membersNotFound: membersNotFound,
         notInGroup: notInGroup,
       },
-      refreshedTokenMessage: res.locals.refreshedTokenMessage,
+      refreshTokenMessage: res.locals.refreshTokenMessage,
     });
   } catch (err) {
     res.status(500).json(err.message);

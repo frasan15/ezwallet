@@ -122,9 +122,8 @@ export const createGroup = async (req, res) => {
     );
     //if the user who calls the API is already in a group this must lead to an error
    const userCallingAPI = await Group.find({members: {$elemMatch: {email: decodedAccessToken.email}}})
-   
    if(userCallingAPI.length > 0){
-    return res.status(400).json({error: "the user who is trying to create the group is alread in another group"});
+    return res.status(400).json({error: "the user who is trying to create the group is already in another group"});
    }
    
    //if the email of the user who calls the API is not in the array then it should be added
@@ -142,8 +141,6 @@ export const createGroup = async (req, res) => {
       return res.status(400).json({error: "Missing or wrong parameters" });
     if(name.trim() === "")
       return res.status(400).json({error: "the name of the group cannot be empty"});
-    if (memberEmails.length === 0)
-      return res.status(400).json({ error: "No members" });
     const group = await Group.findOne({ name: name });
     if (group)
       return res.status(400).json({ error: "Group already exists" });
@@ -154,14 +151,14 @@ export const createGroup = async (req, res) => {
     for (const email of memberEmails) {
       const user = await User.findOne({ email: email });
       if (!user) {
-        membersNotFound.push(email);
+        membersNotFound.push({email: email});
         continue;
       } else {
         const isInGroup = await Group.findOne({
           members: { $elemMatch: { email: email } },
         });
         if (isInGroup) {
-          alreadyInGroup.push(email);
+          alreadyInGroup.push({email: email});
           continue;
         }
       }
@@ -170,7 +167,8 @@ export const createGroup = async (req, res) => {
     
     if (
       alreadyInGroup.length === memberEmails.length ||
-      membersNotFound.length === memberEmails.length
+      membersNotFound.length === memberEmails.length ||
+      alreadyInGroup.length + membersNotFound.length === memberEmails.length
     ) {
       return res.status(400).json({
         error: "All users already in group or none were found in system",

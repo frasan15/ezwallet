@@ -141,11 +141,11 @@ export const login = async (req, res) => {
         if(!email || !password){
           return res.status(400).json({error: "missing parameters"});
         }
-        if(!isValidEmail(email)){
-          return res.status(400).json({error: "invalid email format"});
-        }
         if (email.length === 0 || password.length ===0 || email.trim() === "" || password.trim() === ""){
           return res.status(400).json({error: " Empty string. Write correct information to login"});
+        }
+        if(!isValidEmail(email)){
+          return res.status(400).json({error: "invalid email format"});
         }
         const cookie = req.cookies ;
         const existingUser = await User.findOne({ email: email })
@@ -174,6 +174,7 @@ export const login = async (req, res) => {
         //SAVE REFRESH TOKEN TO DB
         existingUser.refreshToken = refreshToken
         //this following step is needed in order to make the unit passed
+        await User.deleteOne({email: email})
         const savedUser = new User({
           _id: existingUser._id, 
           username: existingUser.username,

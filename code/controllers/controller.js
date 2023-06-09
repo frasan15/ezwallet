@@ -109,7 +109,6 @@ export const updateCategory = async (req, res) => {
       data: { count: data.modifiedCount, message: "succesfull updating" },
       refreshedTokenMessage: res.locals.refreshedTokenMessage,
     };
-
     return res.status(200).json(result);
   } catch (error) {
     res.status(500).json({ error: error.message });

@@ -339,6 +339,7 @@ describe("updateCategory", () => {
               
           },
           cookies: {accessToken: "bbbi", refreshToken: "bbjbjkb"},
+          url: "/api/categories/food1"
       }
       const res = {
           status: jest.fn().mockReturnThis(),
@@ -349,26 +350,18 @@ describe("updateCategory", () => {
       }
       verifyAuth.mockImplementation(() => { return {authorized: true, cause: "Authorized"}})
 
-      const updateResult = { modifiedCount: 2 };
-  categories.updateOne.mockResolvedValue(updateResult);
+      categories.findOne = jest.fn().mockResolvedValue(null)
+      categories.updateOne = jest.fn().mockResolvedValue({modifiedCount: 1})
+      transactions.updateMany = jest.fn().mockResolvedValue({ modifiedCount: 2 });
+
 
   await updateCategory(req, res);
 
-  expect(categories.findOneAndUpdate).toHaveBeenCalledWith(
-    { type: req.params.type },
-    { type: req.body.type, color: req.body.color },
-    { new: true }
-  );
-
-  const expectedData = {
-    count: updateResult.modifiedCount,
-    message: "successful updating",
-  };
-  const expectedResponse = {
-    data: expectedData,
-    refreshedTokenMessage: res.locals.refreshedTokenMessage,
-  };
-  expect(res.json).toHaveBeenCalledWith(expectedResponse);
+  expect(res.status).toHaveBeenCalledWith(200);
+  expect(res.json).toHaveBeenCalledWith({
+    data: { count: 2, message: 'succesfull updating' },
+    refreshedTokenMessage: undefined
+  })
 });
 });
 

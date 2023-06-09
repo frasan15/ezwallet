@@ -17,15 +17,17 @@
 
 
 # Dependency graph 
-
-     image.png
+![dependecy](images/EZWallet_dependencies_graph.png)
      
 # Integration approach
 
-    <Write here the integration sequence you adopted, in general terms (top down, bottom up, mixed) and as sequence
-    (ex: step1: unit A, step 2: unit A+B, step 3: unit A+B+C, etc)> 
-    <Some steps may  correspond to unit testing (ex step1 in ex above)>
-    <One step will  correspond to API testing, or testing unit route.js>
+The project employed a hybrid approach to test the APIs, combining elements of both top-down and bottom-up testing. The integration process can be summarized as follows:
+
+Step 1: Unit Testing - To examine the functionality of smaller units such as functions or methods in isolation, unit tests were written for individual API components.
+
+Step 2: Unit Integration - Following the successful testing and verification of the individual units, they were integrated together. Integration tests were then conducted to ensure smooth integration and expected outcomes by testing the interactions between different units.
+
+Step 3: API Testing - After completing the unit integration phase, the focus shifted to direct testing of the API endpoints. Various test cases were utilized to send requests to the APIs, and the received responses were carefully examined. The primary goal was to confirm that the APIs accurately processed the requests and provided the expected outputs.
     
 
 
@@ -347,7 +349,7 @@
 
 ## Coverage white box
 
-Report here the screenshot of coverage values obtained with jest-- coverage 
+![coverage](images/coverage.png) 
 
 
 

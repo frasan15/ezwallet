@@ -14,7 +14,7 @@ import { verifyAuth } from "../controllers/utils";
 dotenv.config();
 
 beforeAll(async () => {
-  const dbName = "testingDatabaseController";
+  const dbName = "testingDatabaseUsers";
   const url = `${process.env.MONGO_URI}/${dbName}`;
 
   await mongoose.connect(url, {

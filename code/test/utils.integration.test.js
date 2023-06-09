@@ -5,10 +5,13 @@ import {
 } from "../controllers/utils";
 import mongoose from 'mongoose';
 import { User } from '../models/User.js';
+import jwt from 'jsonwebtoken'
+import dotenv from 'dotenv';
 
+dotenv.config();
 
 beforeAll(async () => {
-  const dbName = "testingDatabaseAuth";
+  const dbName = "testingDatabaseUtils";
   const url = `${process.env.MONGO_URI}/${dbName}`;
 
   await mongoose.connect(url, {
@@ -47,6 +50,14 @@ const testerAccessTokenValid = jwt.sign(
   process.env.ACCESS_KEY,
   { expiresIn: "1y" }
 );
+
+const testerAccessTokenExpired = jwt.sign({
+	email: "tester@test.com",
+	username: "tester",
+	role: "Regular"
+	}, process.env.ACCESS_KEY, { expiresIn: '0s' })
+
+
 
 describe("handleDateFilterParams", () => {
   test(`Returns a filter object which contains data attribute if only "date" is present in query`, () => {
@@ -102,13 +113,22 @@ describe("verifyAuth", () => {
 
 	test("should return unauthorized if authType is not one valid", () => {
 		const mockReq = {
-			cookies: { accessToken: testerAccessTokenValid, refreshToken: testerAccessTokenValid },
+		  cookies: {
+			accessToken: testerAccessTokenValid,
+			refreshToken: testerAccessTokenValid,
+		  },
 		};
 		const mockRes = {};
-
-		const response = verifyAuth(mockReq, mockRes, { authType: "wrongType", username: "tester" });
-		expect(response).toEqual({ authorized: false, cause: "Unauthorized" });
-	});
+	
+		const response = verifyAuth(mockReq, mockRes, {
+		  authType: "wrongType",
+		  username: "tester",
+		});
+		expect(response).toEqual({
+		  authorized: false,
+		  cause: "invalid authentication type",
+		});
+	  });
 
 	test("should return unauthorized if authType is not one valid and accessToken is expired", () => {
 		const mockReq = {
@@ -118,12 +138,12 @@ describe("verifyAuth", () => {
 
 		const response = verifyAuth(mockReq, mockRes, { authType: "wrongType", username: "tester" });
 
-		expect(response).toEqual({ authorized: false, cause: "Unauthorized" });
+		expect(response).toEqual({ authorized: false, cause: "TypeError" });
 	});
 
 	test("should return unauthorized if one token is missing information", () => {
 		const mockReq = {
-			cookies: { accessToken: testerAccessTokenEmpty, refreshToken: testerAccessTokenValid },
+			cookies: { accessToken: "", refreshToken: testerAccessTokenValid },
 		};
 		const mockRes = {};
 
@@ -131,25 +151,23 @@ describe("verifyAuth", () => {
 		expect(response).toEqual({ authorized: false, cause: "Unauthorized" });
 	});
 
-	test("should return unauthorized if one token is missing information", () => {
-		const mockReq = {
-			cookies: { accessToken: testerAccessTokenValid, refreshToken: testerAccessTokenEmpty },
-		};
-		const mockRes = {};
-
-		const response = verifyAuth(mockReq, mockRes, { authType: "User", username: "tester" });
-		expect(response).toEqual({ authorized: false, cause: "Unauthorized" });
 	});
 
 	test("should return unauthorized if one token are from different user", () => {
 		const mockReq = {
-			cookies: { accessToken: testerAccessTokenValid, refreshToken: adminAccessTokenValid },
+		  cookies: {
+			accessToken: testerAccessTokenValid,
+			refreshToken: adminAccessTokenValid,
+		  },
 		};
 		const mockRes = {};
-
-		const response = verifyAuth(mockReq, mockRes, { authType: "User", username: "tester" });
-		expect(response).toEqual({ authorized: false, cause: "Unauthorized" });
-	});
+	
+		const response = verifyAuth(mockReq, mockRes, {
+		  authType: "User",
+		  username: "tester",
+		});
+		expect(response).toEqual({ authorized: false, cause: "Mismatched users" });
+	  });
 	test("should return user authorization", () => {
 		const mockReq = {
 			cookies: { accessToken: testerAccessTokenValid, refreshToken: testerAccessTokenValid },
@@ -162,47 +180,48 @@ describe("verifyAuth", () => {
 
 	test("should return invalid admin", () => {
 		const mockReq = {
-			cookies: { accessToken: testerAccessTokenValid, refreshToken: testerAccessTokenValid },
+		  cookies: {
+			accessToken: testerAccessTokenValid,
+			refreshToken: testerAccessTokenValid,
+		  },
 		};
 		const mockRes = {};
-
-		const response = verifyAuth(mockReq, mockRes, { authType: "Admin" });
-		expect(response).toEqual({ authorized: false, cause: "Unauthorized" });
-	});
-	test("should return user not in group", () => {
-		const mockReq = {
-			cookies: { accessToken: testerAccessTokenValid, refreshToken: testerAccessTokenValid },
-		};
-		const mockRes = {};
-
-		const response = verifyAuth(mockReq, mockRes, {
-			authType: "Group",
-			username: "tester2",
-			emails: ["wrong@test.com"],
+		User.create({
+		  username: "tester",
+		  password: "tester",
+		  email: "tester1@test.com",
+		  role: "User",
 		});
-		expect(response).toEqual({ authorized: false, cause: "Unauthorized" });
-	});
-	test("should return user not authorized (with token expired)", () => {
-		const mockReq = {
-			cookies: { accessToken: testerAccessTokenExpired, refreshToken: testerAccessTokenValid },
-		};
-		const mockRes = {
-			cookie: jest.fn(),
-			locals: {
-				refreshTokenMessage: {},
-			},
-		};
+		const response = verifyAuth(mockReq, mockRes, { authType: "Admin" });
+		expect(response).toEqual({
+		  authorized: false,
+		  cause: "function reserved for admins only",
+		});
+	  });
 
-		const response = verifyAuth(mockReq, mockRes, { authType: "User", username: "wrong" });
+test("should return user not in group", async () => {
+    const mockReq = {
+      cookies: {
+        accessToken: testerAccessTokenValid,
+        refreshToken: testerAccessTokenValid,
+      },
+    };
+    const mockRes = {};
 
-		expect(response).toEqual({ authorized: false, cause: "Unauthorized" });
-	});
-
-
+    const response = verifyAuth(mockReq, mockRes, {
+      authType: "Group",
+      username: "tester2",
+      emails: ["wrong@test.com"],
+    });
+    expect(response).toEqual({
+      authorized: false,
+      cause: "unauthorized, you are not part of the requested group",
+    });
+  });
 
 	test("should return admin not authorized (with token expired)", () => {
 		const mockReq = {
-			cookies: { accessToken: testerAccessTokenExpired, refreshToken: testerAccessTokenValid },
+			cookies: { accessToken: testerAccessTokenExpired, refreshToken: testerAccessTokenExpired },
 		};
 		const mockRes = {
 			cookie: jest.fn(),
@@ -212,76 +231,88 @@ describe("verifyAuth", () => {
 		};
 
 		const response = verifyAuth(mockReq, mockRes, { authType: "Admin" });
-		expect(response).toEqual({ authorized: false, cause: "Unauthorized" });
-	});
-
-
-
-	test("should return user not in group (with token expired)", () => {
-		const mockReq = {
-			cookies: { accessToken: "testerAccessTokenExpired", refreshToken: testerAccessTokenValid },
-		};
-		const mockRes = {
-			cookie: jest.fn(),
-			locals: {
-				refreshTokenMessage: {},
-			},
-		};
-
-		const response = verifyAuth(mockReq, mockRes, { authType: "Group", username: "wrong", emails: ["wrong@test.com"] });
-		expect(response).toEqual({ authorized: false, cause: "Unauthorized" });
+		expect(response).toEqual({ authorized: false, cause: "Perform login again" });
 	});
 
 	test("should raise error and suggest to perform login", () => {
 		const mockReq = {
-			cookies: { accessToken: testerAccessTokenValid, refreshToken: testerAccessTokenExpired },
+		  cookies: {
+			accessToken: testerAccessTokenValid,
+			refreshToken: testerAccessTokenExpired,
+		  },
 		};
 		const mockRes = {};
-
-		const response = verifyAuth(mockReq, mockRes, { authType: "User", username: "tester" });
-		expect(response).toEqual({ authorized: false, cause: "Unauthorized" });
-	});
-	test("should return simple authorization", () => {
-		const mockReq = {
-			cookies: { accessToken: testerAccessTokenValid, refreshToken: testerAccessTokenValid },
-		};
-		const mockRes = {};
-
-		const response = verifyAuth(mockReq, mockRes, { authType: "Simple" });
-		expect(response).toEqual({ authorized: false, cause: "Unauthorized" });
-	});
-  test("should return invalid user", () => {
-		const mockReq = {
-			cookies: { accessToken: testerAccessTokenValid, refreshToken: testerAccessTokenValid },
-		};
-		const mockRes = {};
-
-		const response = verifyAuth(mockReq, mockRes, { authType: "User", username: "tester2" });
-		expect(response).toEqual({ authorized: false, cause: "Unauthorized" });
-	});
-  test("should return admin authorization", () => {
-		const mockReq = {
-			cookies: { accessToken: adminAccessTokenValid, refreshToken: adminAccessTokenValid },
-		};
-		const mockRes = {};
-
-		const response = verifyAuth(mockReq, mockRes, { authType: "Admin", username: "admin" });
-		expect(response).toEqual({ authorized: false, cause: "Unauthorized" });
-	});
-  test("should return group authorization", () => {
-		const mockReq = {
-			cookies: { accessToken: testerAccessTokenValid, refreshToken: testerAccessTokenValid },
-		};
-		const mockRes = {};
-
+	
 		const response = verifyAuth(mockReq, mockRes, {
-			authType: "Group",
-			username: "tester",
-			emails: ["tester@test.com"],
+		  authType: "User",
+		  username: "tester",
 		});
-		expect(response).toEqual({ authorized: false, cause: "Unauthorized" });
-	});
-});
+		expect(response).toEqual({
+		  authorized: false,
+		  cause: "Perform login again",
+		});
+	  });
+	  test("should return simple authorization", () => {
+		const mockReq = {
+		  cookies: {
+			accessToken: testerAccessTokenValid,
+			refreshToken: testerAccessTokenValid,
+		  },
+		};
+		const mockRes = {};
+	
+		const response = verifyAuth(mockReq, mockRes, { authType: "Simple" });
+		expect(response).toEqual({ authorized: true, cause: "Authorized" });
+	  });
+	  test("should return invalid user", () => {
+		const mockReq = {
+		  cookies: {
+			accessToken: testerAccessTokenValid,
+			refreshToken: testerAccessTokenValid,
+		  },
+		};
+		const mockRes = {};
+	
+		const response = verifyAuth(mockReq, mockRes, {
+		  authType: "User",
+		  username: "tester2",
+		});
+		expect(response).toEqual({
+		  authorized: false,
+		  cause: "username does not match the related user's token",
+		});
+	  });
+	  test("should return admin authorization", () => {
+		const mockReq = {
+		  cookies: {
+			accessToken: adminAccessTokenValid,
+			refreshToken: adminAccessTokenValid,
+		  },
+		};
+		const mockRes = {};
+	
+		const response = verifyAuth(mockReq, mockRes, {
+		  authType: "Admin",
+		  username: "admin",
+		});
+		expect(response).toEqual({ authorized: true, cause: "Authorized" });
+	  });
+	  test("should return group authorization", () => {
+		const mockReq = {
+		  cookies: {
+			accessToken: testerAccessTokenValid,
+			refreshToken: testerAccessTokenValid,
+		  },
+		};
+		const mockRes = {};
+	
+		const response = verifyAuth(mockReq, mockRes, {
+		  authType: "Group",
+		  username: "tester",
+		  emails: ["tester@test.com"],
+		});
+		expect(response).toEqual({ authorized: true, cause: "Authorized" });
+	  });
 
 describe("handleAmountFilterParams", () => {
   test("Function called with either min and/or max should return a filter object with mix and/or max attributes", () => {

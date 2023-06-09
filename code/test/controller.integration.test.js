@@ -164,6 +164,7 @@ describe("createCategory", () => {
       expect(response.body).toHaveProperty("error", "empty string not acceptable")
 });
 
+});
 describe("createCategory", () => {
   test("category correctly created", async () => {
     await User.insertMany([
@@ -277,7 +278,7 @@ describe("createCategory", () => {
     );
   });
 
-  test("eturns a 400 error if at least one of the parameters in the request body is an empty string", async () => {
+  test("returns a 400 error if at least one of the parameters in the request body is an empty string", async () => {
     await User.insertMany([
       {
         username: "francesco",

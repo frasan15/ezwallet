@@ -28,21 +28,23 @@ export const handleDateFilterParams = (req) => {
   const { date, from, upTo } = req.query;
 
   if (date && (from || upTo)) {
+    throw new Error('Invalid query parameters. Cannot use "date" together with "from" or "upTo".');
+  }
+
+  if (
+    (date && !isValidDate(date)) ||
+    (from && !isValidDate(from)) ||
+    (upTo && !isValidDate(upTo))
+  ) {
     throw new Error(
-      'Invalid query parameters. Cannot use "date" together with "from" or "upTo".'
+      "Invalid date format or date. Date must be in the format YYYY-MM-DD."
     );
   }
 
   if (date) {
-    filter.date = {
-      $gte: new Date(`${date}T00:00:00.000Z`),
-      $lte: new Date(`${date}T23:59:59.999Z`),
-    };
+    filter.date = { $gte: new Date(`${date}T00:00:00.000Z`), $lte: new Date(`${date}T23:59:59.999Z`) };
   } else if (from && upTo) {
-    filter.date = {
-      $gte: new Date(`${from}T00:00:00.000Z`),
-      $lte: new Date(`${upTo}T23:59:59.999Z`),
-    };
+    filter.date = { $gte: new Date(`${from}T00:00:00.000Z`), $lte: new Date(`${upTo}T23:59:59.999Z`) };
   } else if (from) {
     filter.date = { $gte: new Date(`${from}T00:00:00.000Z`) };
   } else if (upTo) {
@@ -229,27 +231,39 @@ export const handleAmountFilterParams = (req) => {
 
   const { min, max } = req.query;
 
-    const handleNumericValue = (value) => {
-      if (isNaN(parseFloat(value))) {
-        throw new Error(`Invalid value`);
-      }
-      const numericValue = parseFloat(value);
-      return numericValue;
-    };
-
-    if (min && max) {
-      filter.amount = { $gte: handleNumericValue(min), $lte: handleNumericValue(max) };
-    } else if (min) {
-      filter.amount = { $gte: handleNumericValue(min) };
-    } else if (max) {
-      filter.amount = { $lte: handleNumericValue(max) };
+  const handleNumericValue = (value) => {
+    if (isNaN(parseFloat(value))) {
+      throw new Error(`Invalid value`);
     }
-  
-    return filter;
+    const numericValue = parseFloat(value);
+    return numericValue;
   };
-  
-  export const isValidEmail = (email) => {
-    const emailformat = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailformat.test(email);
-  };
-  
+
+  if (min && max) {
+    filter.amount = { $gte: handleNumericValue(min), $lte: handleNumericValue(max) };
+  } else if (min) {
+    filter.amount = { $gte: handleNumericValue(min) };
+  } else if (max) {
+    filter.amount = { $lte: handleNumericValue(max) };
+  }
+
+  return filter;
+};
+
+export const isValidEmail = (email) => {
+  const emailformat = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+  return emailformat.test(email);
+};
+
+function isValidDate(dateStr) {
+// Check if the date string matches the format "YYYY-MM-DD"
+if (!dateStr) return false;
+if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+  return false;
+}
+const date = new Date(dateStr);
+if (isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== dateStr) {
+  return false;
+}
+return true;
+}

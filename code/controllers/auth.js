@@ -57,7 +57,7 @@ export const register = async (req, res) => {
       email,
       password: hashedPassword,
     });
-    res.status(200).json("user added succesfully");
+    res.status(200).json({data: "user added succesfully"});
   } catch (err) {
     res.status(500).json(err.message);
   }
@@ -116,7 +116,7 @@ export const registerAdmin = async (req, res) => {
       password: hashedPassword,
       role: "Admin",
     });
-    res.status(200).json("admin added succesfully");
+    res.status(200).json({data: "admin added succesfully"});
   } catch (err) {
     res.status(500).json(err.message);
   }

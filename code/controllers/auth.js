@@ -141,11 +141,11 @@ export const login = async (req, res) => {
         if(!email || !password){
           return res.status(400).json({error: "missing parameters"});
         }
+        if (email.length === 0 || password.length ===0 || email.trim() === "" || password.trim() === ""){
+          return res.status(400).json({error: "Empty string. Write correct information to login"});
+        }
         if(!isValidEmail(email)){
           return res.status(400).json({error: "invalid email format"});
-        }
-        if (email.length === 0 || password.length ===0 || email.trim() === "" || password.trim() === ""){
-          return res.status(400).json({error: " Empty string. Write correct information to login"});
         }
         const cookie = req.cookies ;
         const existingUser = await User.findOne({ email: email })
@@ -173,8 +173,8 @@ export const login = async (req, res) => {
         }, process.env.ACCESS_KEY, { expiresIn: '7d' })
         //SAVE REFRESH TOKEN TO DB
         existingUser.refreshToken = refreshToken
-        //this following step is needed in order to make the unit passed
-        const savedUser = new User({
+        await User.deleteOne({email: email})
+        const savedUser = await new User({
           _id: existingUser._id, 
           username: existingUser.username,
           email: existingUser.email,
@@ -184,8 +184,7 @@ export const login = async (req, res) => {
           updatedAt: existingUser.updatedAt,
           __v: 0,
           refreshToken: existingUser.refreshToken
-        })
-        await savedUser.save()
+        }).save()
         res.cookie("accessToken", accessToken, { httpOnly: true, domain: "localhost", path: "/api", maxAge: 60 * 60 * 1000, sameSite: "none", secure: true })
         res.cookie('refreshToken', refreshToken, { httpOnly: true, domain: "localhost", path: '/api', maxAge: 7 * 24 * 60 * 60 * 1000, sameSite: 'none', secure: true })
         res.status(200).json({ data: { accessToken: accessToken, refreshToken: refreshToken } })

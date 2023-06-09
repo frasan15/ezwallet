@@ -3,7 +3,8 @@ import { app } from '../app';
 import { User } from '../models/User.js';
 import { login } from '../controllers/auth';
 import jwt from "jsonwebtoken";
-const bcrypt = require("bcryptjs")
+//const bcrypt = require("bcryptjs")
+import bcrypt from "bcryptjs";
 
 beforeEach(() => {
     User.find.mockClear();
@@ -47,13 +48,16 @@ describe('login', () => {
         }
         }
 
+        const password = "admin"
+        const hashedPassword = await bcrypt.hash(password, 12);
+
         const user = {
             username: 'santosanto',
             email: 'admin@polito.it',
-            password: '$2a$12$74Uc1Tpatb7H0OZTzEGyVeZy/dwYKhDZ3biqcFW0KNP/neeQ/AM6a',
+            password: hashedPassword,
             role: 'Admin',
             __v: 0,
-            refreshToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluQHBvbGl0by5pdCIsImlkIjoiNjQ3NGE2NjZlZDIzZTRkYzc5MzU5ZDQzIiwidXNlcm5hbWUiOiJzYW50b3NhbnRvIiwicm9sZSI6IkFkbWluIiwiaWF0IjoxNjg1OTcyNjkzLCJleHAiOjE2ODY1Nzc0OTN9.OS3iLLDoD-dx_L4H6aQxg4LKUp4gTPm-gY57JS_BOD8'
+            refreshToken: 'validRefreshToken'
           }
 
         User.findOne = jest.fn().mockResolvedValue(user)
@@ -64,13 +68,14 @@ describe('login', () => {
         const savedUser = {
             username: 'santosanto',
             email: 'admin@polito.it',
-            password: '$2a$12$74Uc1Tpatb7H0OZTzEGyVeZy/dwYKhDZ3biqcFW0KNP/neeQ/AM6a',
+            password: 'validPassword',
             role: 'Admin',
             __v: 0,
-            refreshToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluQHBvbGl0by5pdCIsImlkIjoiNjQ3NGE2NjZlZDIzZTRkYzc5MzU5ZDQzIiwidXNlcm5hbWUiOiJzYW50b3NhbnRvIiwicm9sZSI6IkFkbWluIiwiaWF0IjoxNjg1OTg0NTAwLCJleHAiOjE2ODY1ODkzMDB9.VwbSaCy8-0P-QuurwUB-ZHgyKEv8eFoL8wFZoZPykh0'
+            refreshToken: 'validRefreshToken'
           }
 
-        User.prototype.save.mockImplementation(() => {return savedUser});
+        //user.prototype.save.mockResolvedValue(savedUser);
+        jest.spyOn(User.prototype, "save").mockResolvedValue(savedUser)
 
         await login(mockReq, mockRes)
 
@@ -112,6 +117,72 @@ describe('login', () => {
 
         expect(mockRes.status).toHaveBeenCalledWith(400)
         expect(mockRes.json).toHaveBeenCalledWith({error: expect.any(String)})
+    });
+
+    test("Returns a 400 error if the request body does not contain all the necessary attributes", async() => {
+        const mockReq = {
+            body: {email: "antoniomarco@email.com"},
+            url: "/api/login",
+            cookies: ""
+        }
+        
+        const mockRes = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+        cookie: jest.fn(),
+        locals: {
+            refreshedTokenMessage: ""
+        }
+        }
+
+        await login(mockReq, mockRes)
+
+        expect(mockRes.status).toHaveBeenCalledWith(400)
+        expect(mockRes.json).toHaveBeenCalledWith({error: "missing parameters"})
+    });
+
+    test("Returns a 400 error if the email in the request body is not in a valid email format", async() => {
+        const mockReq = {
+            body: {email: "antoniomarcoemail.com", password: "password"},
+            url: "/api/login",
+            cookies: ""
+        }
+        
+        const mockRes = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+        cookie: jest.fn(),
+        locals: {
+            refreshedTokenMessage: ""
+        }
+        }
+
+        await login(mockReq, mockRes)
+
+        expect(mockRes.status).toHaveBeenCalledWith(400)
+        expect(mockRes.json).toHaveBeenCalledWith({error: "invalid email format"})
+    });
+
+    test("Returns a 400 error if at least one of the parameters in the request body is an empty string", async() => {
+        const mockReq = {
+            body: {email: "antoniomarco@email.com", password: "    "},
+            url: "/api/login",
+            cookies: ""
+        }
+        
+        const mockRes = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+        cookie: jest.fn(),
+        locals: {
+            refreshedTokenMessage: ""
+        }
+        }
+
+        await login(mockReq, mockRes)
+
+        expect(mockRes.status).toHaveBeenCalledWith(400)
+        expect(mockRes.json).toHaveBeenCalledWith({error: "Empty string. Write correct information to login"})
     });
 
     test('Returns a 400 error if the email in the request body does not identify a user in the database', async () => {

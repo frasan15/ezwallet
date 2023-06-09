@@ -143,9 +143,8 @@ export const createGroup = async (req, res) => {
     );
     //if the user who calls the API is already in a group this must lead to an error
    const userCallingAPI = await Group.find({members: {$elemMatch: {email: decodedAccessToken.email}}})
-   
    if(userCallingAPI.length > 0){
-    return res.status(400).json({error: "the user who is trying to create the group is alread in another group"});
+    return res.status(400).json({error: "the user who is trying to create the group is already in another group"});
    }
    
    //if the email of the user who calls the API is not in the array then it should be added
@@ -163,8 +162,6 @@ export const createGroup = async (req, res) => {
       return res.status(400).json({error: "Missing or wrong parameters" });
     if(name.trim() === "")
       return res.status(400).json({error: "the name of the group cannot be empty"});
-    if (memberEmails.length === 0)
-      return res.status(400).json({ error: "No members" });
     const group = await Group.findOne({ name: name });
     if (group)
       return res.status(400).json({ error: "Group already exists" });
@@ -175,14 +172,14 @@ export const createGroup = async (req, res) => {
     for (const email of memberEmails) {
       const user = await User.findOne({ email: email });
       if (!user) {
-        membersNotFound.push(email);
+        membersNotFound.push({email: email});
         continue;
       } else {
         const isInGroup = await Group.findOne({
           members: { $elemMatch: { email: email } },
         });
         if (isInGroup) {
-          alreadyInGroup.push(email);
+          alreadyInGroup.push({email: email});
           continue;
         }
       }
@@ -191,7 +188,8 @@ export const createGroup = async (req, res) => {
     
     if (
       alreadyInGroup.length === memberEmails.length ||
-      membersNotFound.length === memberEmails.length
+      membersNotFound.length === memberEmails.length ||
+      alreadyInGroup.length + membersNotFound.length === memberEmails.length
     ) {
       return res.status(400).json({
         error: "All users already in group or none were found in system",
@@ -261,20 +259,19 @@ export const getGroups = async (req, res) => {
           const group = await Group.findOne({name : groupname});
           if (!group) {
             return res.status(400).json({ error: 'Group does not exist' });
-          } 
-          const data = group.map(group => {
+          }
             const members = group.members.map(member => ({
               email: member.email
             }));
-            return { name: group.name, members };
-          });
-          const useremail = data[0].members.map(user => user.email);
+            
+          const useremail = members.map(user => user.email);
+          
           const admin = verifyAuth(req, res, { authType: "Admin" })
           const user = verifyAuth(req, res, { authType: "Group" , emails: useremail});
-          if (!user.authorized && !admin.authorized)
+          if (!user.authorized && !admin.authorized){
             return res.status(401).json({error: "User Unauthorized"}) ;
-           
-          res.status(200).json({data,
+          }
+          res.status(200).json({data: {group: {name: groupname, members}},
             refreshedTokenMessage: res.locals.refreshedTokenMessage});
         } catch (error) {
           res.status(500).json({ error: error.message })
@@ -311,7 +308,6 @@ or do not exist in the database
         const groupName = req.params.name;
         // Find group by params
         const group = await Group.findOne({ name: groupName });
-        
         if (!group) {
           return res.status(400).json({ error: "Group does not exist. Create it first." });
         } 
@@ -324,7 +320,7 @@ or do not exist in the database
           }
         }else if (userRout){
             const useremail = group.members.map(user => user.email);
-            const user = verifyAuth(req, res, { authType: "Group" , email:useremail });
+            const user = verifyAuth(req, res, { authType: "Group" , emails:useremail });
             if (!user.authorized){
               return res.status(401).json({ error: "Unauthorized" }); 
             }
@@ -334,8 +330,7 @@ or do not exist in the database
             const { emails } = req.body;
            
           if (!emails){ 
-            
-            return res.status(400).json({error: " Missing parameters"});
+            return res.status(400).json({error: "Missing parameters"});
           }
 
                
@@ -343,7 +338,6 @@ or do not exist in the database
         let membersNotFound = [];
         const invalidEmails = [];
         const newMembers = [];
-        
         for(const email of emails){
           // check empty email 
           if (email.trim() === ""){
@@ -380,12 +374,15 @@ or do not exist in the database
         }
 
         // Save the updated group
-        const updatedGroup = new Group({name: group.name}, {members: group.members})
-        await updatedGroup.save()
+        //TODO: try cancelling the old group and replacing the new one's id with the old group's id
+        //const updatedGroup = new Group({_id: group._id + "1"}, {name: group.name}, {members: group.members})
+        //await updatedGroup.save()
+        await Group.deleteOne({name: group.name})
+        await Group.create({
+          name: group.name,
+          members: group.members
+        })
 
-        //await Group.updateMany({name: groupName}, {...Group, newMembers});
-        //const updateGroup = await Group.findOne({name: groupName})
-        
         const responseData = { group: { name: group.name, members: group.members,}, alreadyInGroup,
           membersNotFound,
         };

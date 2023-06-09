@@ -240,7 +240,7 @@ describe("verifyAuth", () => {
 });
 
 describe("handleAmountFilterParams", () => {
-  test.only("Function called with either min and/or max should return a filter object with mix and/or max attributes", () => {
+  test("Function called with either min and/or max should return a filter object with mix and/or max attributes", () => {
     const reqs = [
       { query: { min: "10" } },
       { query: { max: "10" } },

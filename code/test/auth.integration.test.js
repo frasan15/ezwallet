@@ -44,7 +44,7 @@ const adminAccessTokenValid = jwt.sign({
   }, process.env.ACCESS_KEY, { expiresIn: '1y' })
 
 describe('register', () => {
-  test.only("Should return 400 if request body does not contain all the necessary attributes", async () => {
+  test("Should return 400 if request body does not contain all the necessary attributes", async () => {
     const response = await request(app)
       .post("/api/register")
       .send({ username: "test", password: "test"});
@@ -52,7 +52,7 @@ describe('register', () => {
     expect(response.body).toEqual({ error: "Missing attributes" });
   });
 
-  test.only("Should return 400 if at least one of the parameters in the request body is an empty string", async () => {
+  test("Should return 400 if at least one of the parameters in the request body is an empty string", async () => {
     const response = await request(app)
       .post("/api/register")
       .send({ username: "test", email: "", password: "test"});
@@ -60,7 +60,7 @@ describe('register', () => {
     expect(response.body).toEqual({ error: "Empty attributes" });
   });
 
-  test.only("Should return 400 if the email in the request body is not in a valid email format", async () => {
+  test("Should return 400 if the email in the request body is not in a valid email format", async () => {
     const response = await request(app)
       .post("/api/register")
       .send({ username: "test", email: "notAnEmail", password: "test"});
@@ -68,7 +68,7 @@ describe('register', () => {
     expect(response.body).toEqual({ error: "Email is not valid" });
   });
 
-  test.only("Should return 400 if the username in the request body identifies an already existing user", async () => {
+  test("Should return 400 if the username in the request body identifies an already existing user", async () => {
     await User.create({username: "test1", email: "test1@test.com", password: "test"});
     const response = await request(app)
       .post("/api/register")
@@ -77,7 +77,7 @@ describe('register', () => {
     expect(response.body).toEqual({ error: "Username is already registered" });
   });
 
-  test.only("Should return 400 if the email in the request body identifies an already existing user", async () => {
+  test("Should return 400 if the email in the request body identifies an already existing user", async () => {
     await User.create({username: "test2", email: "test2@test.com", password: "test"});
     const response = await request(app)
       .post("/api/register")
@@ -86,7 +86,7 @@ describe('register', () => {
     expect(response.body).toEqual({ error: "Email is already registered" });
   });
 
-  test.only("Should return 200 if the user is added successfully", async () => {
+  test("Should return 200 if the user is added successfully", async () => {
     await User.create({username: "test3", email: "test3@test.com", password: "test"});
     const response = await request(app)
       .post("/api/register")
@@ -97,7 +97,7 @@ describe('register', () => {
 });
 
 describe("registerAdmin", () => { 
-  test.only("Should return 400 if request body does not contain all the necessary attributes", async () => {
+  test("Should return 400 if request body does not contain all the necessary attributes", async () => {
     const response = await request(app)
       .post("/api/admin")
       .send({ username: "test", password: "test"});
@@ -105,7 +105,7 @@ describe("registerAdmin", () => {
     expect(response.body).toEqual({ error: "Missing attributes" });
   });
 
-  test.only("Should return 400 if at least one of the parameters in the request body is an empty string", async () => {
+  test("Should return 400 if at least one of the parameters in the request body is an empty string", async () => {
     const response = await request(app)
       .post("/api/admin")
       .send({ username: "test", email: "", password: "test"});
@@ -113,7 +113,7 @@ describe("registerAdmin", () => {
     expect(response.body).toEqual({ error: "Empty attributes" });
   });
 
-  test.only("Should return 400 if the email in the request body is not in a valid email format", async () => {
+  test("Should return 400 if the email in the request body is not in a valid email format", async () => {
     const response = await request(app)
       .post("/api/admin")
       .send({ username: "test", email: "notAnEmail", password: "test"});
@@ -121,7 +121,7 @@ describe("registerAdmin", () => {
     expect(response.body).toEqual({ error: "Email is not valid" });
   });
 
-  test.only("Should return 400 if the username in the request body identifies an already existing user", async () => {
+  test("Should return 400 if the username in the request body identifies an already existing user", async () => {
     await User.create({username: "test1", email: "test1@test.com", password: "test"});
     const response = await request(app)
       .post("/api/admin")
@@ -130,7 +130,7 @@ describe("registerAdmin", () => {
     expect(response.body).toEqual({ error: "Username is already registered" });
   });
 
-  test.only("Should return 400 if the email in the request body identifies an already existing user", async () => {
+  test("Should return 400 if the email in the request body identifies an already existing user", async () => {
     await User.create({username: "test2", email: "test2@test.com", password: "test"});
     const response = await request(app)
       .post("/api/admin")
@@ -139,7 +139,7 @@ describe("registerAdmin", () => {
     expect(response.body).toEqual({ error: "Email is already registered" });
   });
 
-  test.only("Should return 200 if the user is added successfully", async () => {
+  test("Should return 200 if the user is added successfully", async () => {
     await User.create({username: "test3", email: "test3@test.com", password: "test"});
     const response = await request(app)
       .post("/api/admin")

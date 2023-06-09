@@ -18,7 +18,7 @@
 
 # Dependency graph 
 
-     <report the here the dependency graph of EzWallet>
+     image.png
      
 # Integration approach
 
@@ -163,7 +163,45 @@
 | Return user authorization ||||
 | Suggest to perform login ||||
 | Should raise error ||||
-
+| login | login | unit, integration | WB statement coverage |
+| login performed succesfully ||||
+| Returns a 400 error if the request body does not contain all the necessary attributes |||
+| Returns a 400 error if the email in the request body is not in a valid email format ||||
+| Returns a 400 error if at least one of the parameters in the request body is an empty string ||||
+| Returns a 400 error if the email in the request body does not identify a user in the database ||||
+| Returns a 400 error if the supplied password does not match with the one in the database ||||
+| createCategory | createCategory | unit, integration | WB statement coverage |
+| category correctly created ||||
+| Returns a 400 error if the type of category passed in the request body represents an already existing category in the database ||||
+| Returns a 400 error if the request body does not contain all the necessary attributes ||||
+| returns a 400 error if at least one of the parameters in the request body is an empty string ||||
+| returns a 401 error if called by an authenticated user who is not an admin (authType = Admin) ||||
+| getCategories | getCategories | unit, integration | WB statement coverage |
+| categories correctly returned ||||
+| Returns a 401 error if called by a user who is not authenticated (authType = Simple) ||||
+| createGroup | createGroup | unit, integration | WB statement coverage |
+| all members added correctly, except for one of them who does not exist and the other who already belongs to another group ||||
+| all members correctly added, the user's email who is calling the API is already present in the request's members array ||||
+| Returns a 400 error if the request body does not contain all the necessary attributes ||||
+| Returns a 400 error if the group name passed in the request body represents an already existing group in the database ||||
+| Returns a 400 error if the group name passed in the request body is an empty string ||||
+| Returns a 400 error if all the provided emails represent users that are already in a group or do not exist in the database ||||
+| Returns a 400 error if the user who calls the API is already in a group ||||
+| Returns a 400 error if at least one of the member emails is not in a valid email format ||||
+| Returns a 401 error if called by a user who is not authenticated (authType = Simple) ||||
+| getGroups | getGroups | unit, integration | WB statement coverage |
+| it returns correctly the two groups ||||
+| it returns empty list if there are no groups ||||
+| Returns a 401 error if called by an authenticated user who is not an admin (authType = Admin) ||||
+| getGroup | getGroup | unit, integration | WB statement coverage |
+| It returns the requested group if called by an Admin ||||
+| It returns the requested group if called by a regular user who is part of the group ||||
+| it returns 400 error if the requested group does not exist ||||
+| it returns 401 error if called by a regular user who is not part of the group ||||
+| addToGroup | addToGroup | unit, integration | WB statement coverage | 
+| Method called by an admin, returned with success ||||
+| Method called by a regular user belonging to the requested group, returned with success ||||
+| Returns a 400 error if the group name passed as a route parameter does not represent a group in the database ||||
 
 
 
@@ -189,14 +227,12 @@
 || Should return 400 if the username in the request body identifies an already existing user |
 || Should return 400 if the email in the request body identifies an already existing user |
 || Should return 200 if the user is added successfully |
-| FR12 login |  |
-||  |
-||  |
-||  |
-||  |
-||  |
-||  |
-||  |
+| FR12 login | login performed succesfully |
+| | Returns a 400 error if the request body does not contain all the necessary attributes |
+| | Returns a 400 error if the email in the request body is not in a valid email format |
+| | Returns a 400 error if at least one of the parameters in the request body is an empty string |
+| | Returns a 400 error if the email in the request body does not identify a user in the database |
+| | Returns a 400 error if the supplied password does not match with the one in the database |
 | FR13 logout | Should return 400 error if refreshToken cookie is not provided  |
 || Should return 400 error if user with the provided refreshToken is not found |
 || Should return 400 error if an error occurs during logout |
@@ -220,10 +256,25 @@
 || should return 400 if user is an admin |
 || should return 200 if user and his transactions are deleted, with one user in a group |
 | FR2 Manage | |
-| FR21 createGroup | |
-| FR22 getGroups | |
-| FR23 getGroup | |
-| FR24 addToGroup | |
+| FR21 createGroup | all members added correctly, except for one of them who does not exist and the other who already belongs to another group |
+| | all members correctly added, the user's email who is calling the API is already present in the request's members array |
+| | Returns a 400 error if the request body does not contain all the necessary attributes |
+| | Returns a 400 error if the group name passed in the request body represents an already existing group in the database |
+| | Returns a 400 error if the group name passed in the request body is an empty string |
+| | Returns a 400 error if all the provided emails represent users that are already in a group or do not exist in the database |
+| | Returns a 400 error if the user who calls the API is already in a group |
+| | Returns a 400 error if at least one of the member emails is not in a valid email format |
+| | Returns a 401 error if called by a user who is not authenticated (authType = Simple) |
+| FR22 getGroups | it returns correctly the two groups |
+| | it returns empty list if there are no groups |
+| | Returns a 401 error if called by an authenticated user who is not an admin (authType = Admin) |
+| FR23 getGroup | It returns the requested group if called by an Admin |
+| | It returns the requested group if called by a regular user who is part of the group |
+| | it returns 400 error if the requested group does not exist |
+| | it returns 401 error if called by a regular user who is not part of the group |
+| FR24 addToGroup | Method called by an admin, returned with success |
+| | Method called by a regular user belonging to the requested group, returned with success |
+| | Returns a 400 error if the group name passed as a route parameter does not represent a group in the database |
 | FR26 removeFromGroup | Should remove members from group as admin |
 || Should return 401 unauthorized if not an admin or group member  |
 ||  Should return 400 error if the request body does not contain all the necessary attributes |
@@ -269,7 +320,11 @@
 || Returns a 400 error if at least one of the ids in the array does not represent a transaction in the database|
 || Returns a 401 error if called by an authenticated user who is not an admin (authType = Admin)|
 | FR4 Manage | |
-| FR41 createCategory | |
+| FR41 createCategory | category correctly created |
+| | Returns a 400 error if the type of category passed in the request body represents an already existing category in the database |
+| | Returns a 400 error if the request body does not contain all the necessary attributes |
+| | returns a 400 error if at least one of the parameters in the request body is an empty string |
+| | returns a 401 error if called by an authenticated user who is not an admin (authType = Admin) |
 | FR42 updateCategory | Should return 401 error if called by an authenticated user who is not an admin |
 || Should 400 error if the request body does not contain all the necessary attributes  |
 || Should return 400 error if request body is an empty string  |
@@ -286,7 +341,8 @@
 || |
 || |
 || |
-| FR44 getCategories | |
+| FR44 getCategories | categories correctly returned |
+| | Returns a 401 error if called by a user who is not authenticated (authType = Simple) |
 
 
 ## Coverage white box

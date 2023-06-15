@@ -28,17 +28,12 @@
     "jest-extended": "^3.2.4",
     "js-cookie": "^3.0.1",
     "jsonwebtoken": "^8.5.1",
-<<<<<<< HEAD
-    "mongoose": "^6.11.2",
-    "npx": "^10.2.2"
-=======
     "mongoose": "^6.10.4",
     "npx": "^10.2.2",
     "lodash": "^4.17.21",
     "ramda": "^0.29.0",
     "validator": "^13.9.0",
     "yup": "^1.1.1"
->>>>>>> upstream/main
   },
   "devDependencies": {
     "@babel/core": "7.21.3",

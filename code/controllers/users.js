@@ -596,7 +596,7 @@ export const deleteUser = async (req, res) => {
       .status(200)
       .json({
         data: {
-          deletedTransaction: deletedTransactions.deletedCount,
+          deletedTransactions: deletedTransactions.deletedCount,
           deletedFromGroup: deletedFromGroup,
         },
         refreshedTokenMessage: res.locals.refreshedTokenMessage,

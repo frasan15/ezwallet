@@ -112,6 +112,8 @@ export const createGroup = async (req, res) => {
     const user = verifyAuth(req, res, { authType: "Simple" });
     if (!user || !user.authorized)
       return res.status(401).json({ error: "Unauthorized" });
+    if(!req.body.name || !req.body.memberEmails)
+      return res.status(400).json({error: "missing parameters"})
     const { name, memberEmails } = req.body;
     const cookie = req.cookies;
 
@@ -127,18 +129,18 @@ export const createGroup = async (req, res) => {
    }
    
    //if the email of the user who calls the API is not in the array then it should be added
+   /*
    const check1 = memberEmails.some(x => x === decodedAccessToken.email)
    if(!check1){
     memberEmails.push(decodedAccessToken.email)
    }
-   
+   */
     for (const email of memberEmails){
-      if(!isValidEmail(email) || email.trim() === "")
+      if(!isValidEmail(email) || email.trim() === "missing")
         return res.status(400).json({error: "one or more emails are either written in a wrong format or empty"});
     }
     
-    if (!name || !memberEmails)
-      return res.status(400).json({error: "Missing or wrong parameters" });
+    
     if(name.trim() === "")
       return res.status(400).json({error: "the name of the group cannot be empty"});
     const group = await Group.findOne({ name: name });
@@ -164,7 +166,10 @@ export const createGroup = async (req, res) => {
       }
       members.push({ email: email, user: user._id });
     }
-    
+    const check1 = memberEmails.some(x => x === decodedAccessToken.email)
+    if(!check1){
+     members.push({email: decodedAccessToken.email, user: decodedAccessToken._id})
+    }
     if (
       alreadyInGroup.length === memberEmails.length ||
       membersNotFound.length === memberEmails.length ||
@@ -400,7 +405,7 @@ or do not exist in the database
 export const removeFromGroup = async (req, res) => {
   try {
     const name = req.params.name;
-    if (!req.body) {
+    if (!req.body.emails) {
       return res.status(400).json({ error: "Missing or wrong parameters" });
     }
     const { emails } = req.body;
@@ -488,7 +493,6 @@ export const removeFromGroup = async (req, res) => {
     }
 
     const list = await Group.findOne({ name: name }); // I need the current group updated
-    const remainingMembers = list.members.map((a) => a.email);
     if (
       emails.length === membersNotFound.length ||
       emails.length === notInGroup.length ||
@@ -505,7 +509,7 @@ export const removeFromGroup = async (req, res) => {
       data: {
         group: {
           name: name,
-          members: remainingMembers,
+          members: list.members,
         },
         membersNotFound: membersNotFound,
         notInGroup: notInGroup,
@@ -643,7 +647,7 @@ export const deleteGroup = async (req, res) => {
     await Group.deleteOne({name: name});
 
     return res.status(200).json({
-      data: { error: "the group has been correctly deleted" },
+      data: { message: "the group has been correctly deleted" },
     });
   } catch (err) {
     res.status(500).json(err.message);

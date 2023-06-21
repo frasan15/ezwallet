@@ -57,7 +57,7 @@ export const register = async (req, res) => {
       email,
       password: hashedPassword,
     });
-    res.status(200).json({data: "user added succesfully"});
+    res.status(200).json({data: {message: "user added succesfully"}});
   } catch (err) {
     res.status(500).json(err.message);
   }
@@ -116,7 +116,7 @@ export const registerAdmin = async (req, res) => {
       password: hashedPassword,
       role: "Admin",
     });
-    res.status(200).json({data: "admin added succesfully"});
+    res.status(200).json({data: {message: "admin added succesfully"}});
   } catch (err) {
     res.status(500).json(err.message);
   }
@@ -225,7 +225,7 @@ export const logout = async (req, res) => {
       secure: true,
     });
     const savedUser = await user.save();
-    res.status(200).json({ data: { error: "User logged out" } });
+    res.status(200).json({ data: { message: "User logged out" } });
   } catch (error) {
     res.status(500).json(error.message);
   }

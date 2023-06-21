@@ -1136,7 +1136,7 @@ describe("deleteGroup", () => {
       )
       .send({ username: "admin", name: "Family" });
     expect(response.status).toBe(200);
-    expect(response.body).toEqual({ data: { error: expect.any(String) } });
+    expect(response.body).toEqual({ data: { message: "the group has been correctly deleted" } });
   });
   test("Should Return 400, if User is not Authorized", async () => {
     const user = {

@@ -1820,7 +1820,7 @@ describe("deleteTransactions", () => {
     expect(mockRes.status).toHaveBeenCalledWith(200);
 
     expect(mockRes.json).toHaveBeenCalledWith({
-      message: mockMessage,
+      data:{message: mockMessage},
       refreshedTokenMessage: undefined,
     });
   });

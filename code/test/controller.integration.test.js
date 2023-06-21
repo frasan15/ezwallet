@@ -1446,7 +1446,7 @@ describe("deleteTransaction", () => {
       )
       .send({ _id: transactionToDelete._id });
     expect(response.status).toBe(200);
-    expect(response.body).toEqual({ message: "Transaction deleted" });
+    expect(response.body).toEqual({ data:{message: "Transaction deleted" }});
   });
 });
 
@@ -1494,7 +1494,7 @@ describe("deleteTransactions", () => {
       .send({ _ids:  transactionsToDeleteIds });
     expect(response.status).toBe(200);
     expect(response.body).toEqual({ 
-      message: "Transactions deleted",
+      data:{message: "Transactions deleted"}
    });
   });
   test("Returns a 400 error if the request body does not contain all the necessary attributes", async () => {

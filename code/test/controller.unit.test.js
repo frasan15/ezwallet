@@ -399,15 +399,16 @@ describe("deleteCategory", () => {
     });
   });
   test("Should return 401 Error if user is Unauthorized", async () => {
-    verifyAuth.mockImplementation(() => {
-      return { authorized: false, cause: "Unauthorized" };
-    });
     const req = {
-      body: {},
+      body: { 
+        types: ["student"],
+      },
       cookies: { accessToken: "aaaa", refreshToken: "bbbbb" },
       url: "/api/categories",
     };
-
+    verifyAuth.mockImplementation(() => {
+      return { authorized: false, cause: "Unauthorized" };
+    });
     const res = {
       status: jest.fn().mockReturnThis(),
       json: jest.fn(),

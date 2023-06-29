@@ -1485,10 +1485,10 @@ describe("deleteUser", () => {
     expect(mockRes.status).toHaveBeenCalledWith(200);
     expect(mockRes.json).toHaveBeenCalledWith({
       data: {
-        deletedFromGroup: expect.any(Boolean),
-        deletedTransaction: expect.any(Number),
+        deletedFromGroup: true,
+        deletedTransactions: 1,
       },
-      refreshedTokenMessage: undefined,
+      refreshedTokenMessage: "",
     });
   });
 });

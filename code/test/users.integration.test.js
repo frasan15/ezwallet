@@ -1107,7 +1107,7 @@ describe("deleteUser", () => {
       )
       .send({ email: userTester.email });
     expect(response.status).toBe(200);
-    expect(response.body.data.deletedTransaction).toEqual(2);
+    expect(response.body.data.deletedTransactions).toEqual(2);
     expect(response.body.data.deletedFromGroup).toEqual(true);
     const deletedGroup = await Group.findOne({ name: "testGroup" });
     expect(deletedGroup).toEqual(null);

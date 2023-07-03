@@ -1484,11 +1484,11 @@ describe("deleteUser", () => {
 
     expect(mockRes.status).toHaveBeenCalledWith(200);
     expect(mockRes.json).toHaveBeenCalledWith({
-      data: expect.objectContaining({
-        deletedFromGroup: expect.any(Boolean),
-        deletedTransaction: expect.any(Number),
-      }),
-      refreshedTokenMessage: expect.any(String),
+      data: {
+        deletedFromGroup: true,
+        deletedTransactions: 1,
+      },
+      refreshedTokenMessage: "",
     });
   });
 });
@@ -1515,7 +1515,7 @@ describe("deleteGroup", () => {
     Group.findOne.mockResolvedValue({ name: "Family" });
     Group.deleteOne.mockResolvedValue({ name: "family" })
     expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith({ data: { error: expect.any(String) } });
+    expect(res.json).toHaveBeenCalledWith({ data: { message: "the group has been correctly deleted" } });
   });
 
   test("Should Return 401, if User is not Authorized", async () => {

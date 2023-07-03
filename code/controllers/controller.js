@@ -135,6 +135,9 @@ export const updateCategory = async (req, res) => {
 export const deleteCategory = async (req, res) => {
   try {
     const adminAuth = verifyAuth(req, res, { authType: "Admin" });
+    if (!req.body.types || req.body.types.length === 0) {
+      return res.status(400).json({ error: "Missing parameters" });
+    }
     if (!adminAuth.authorized) {
       return res.status(401).json({
         error: "unauthorised, only admins have access to this feature",
@@ -143,10 +146,6 @@ export const deleteCategory = async (req, res) => {
 
     let count = 0;
     const { types } = req.body;
-
-    if (!types) {
-      return res.status(400).json({ error: "missing parameters" });
-    }
 
     if ((await categories.count()) === 1) {
       return res.status(400).json({
@@ -258,15 +257,15 @@ export const createTransaction = async (req, res) => {
         error: "Bad request: empty string is not a valid parameter",
       });
     }
-    if (typeof amount !== "number") {
-      return res.status(400).json({
-        error: "Amount must be a number",
-      });
-    }
-    let floatAmount = Number(amount);
+    let floatAmount = parseFloat(amount);
     if (isNaN(floatAmount)) {
       return res.status(400).json({
         error: "Error parsing amount",
+      });
+    }
+    if (req.params.username !== username) {
+      return res.status(400).json({
+        error: "Username in body is not equal to username in URL",
       });
     }
     const user = await User.findOne({ username: username });
@@ -334,7 +333,7 @@ export const getAllTransactions = async (req, res) => {
         }
       )
     );
-    res.status(200).json(data);
+    res.status(200).json({data: data});
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -506,6 +505,11 @@ const searchGroupAndCheckAdmin = async (req, res, checkAdmin) => {
 const commonTransactionsByGroup = async (req, res, isAdmin) => {
   const allTransactions = [];
   const group = await Group.findOne({ name: req.params.name });
+  if (!group) {
+    return res.status(400).json({
+      error: "Group not found",
+    });
+  }
   if (!isAdmin) {
     // if user is not admin, check if user is in group
     const userWhoMadeRequest = await User.findOne({
@@ -639,9 +643,22 @@ export const deleteTransaction = async (req, res) => {
         error: "Transaction id invalid",
       });
     }
+    const transaction = await transactions.findOne({ _id: req.body._id });  
+    if (!transaction) {
+      return res.status(400).json({
+        error: "Transaction not found",
+      });
+    }
+    if (transaction.username !== req.params.username) {
+      return res.status(400).json({
+        error: "Transaction not made by the user",
+      });
+    }
     await transactions.deleteOne({ _id: req.body._id });
     return res.status(200).json({
-      message: "Transaction deleted",
+      data: {
+        message: "Transaction deleted",
+      },
       refreshedTokenMessage: res.locals.refreshedTokenMessage,
     });
   } catch (error) {
@@ -694,7 +711,9 @@ export const deleteTransactions = async (req, res) => {
     }
     await transactions.deleteMany({ _id: { $in: req.body._ids } });
     return res.status(200).json({
-      message: "Transactions deleted",
+      data: {
+        message: "Transactions deleted",
+      },
       refreshedTokenMessage: res.locals.refreshedTokenMessage,
     });
   } catch (error) {

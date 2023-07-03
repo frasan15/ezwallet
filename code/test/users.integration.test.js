@@ -1107,7 +1107,7 @@ describe("deleteUser", () => {
       )
       .send({ email: userTester.email });
     expect(response.status).toBe(200);
-    expect(response.body.data.deletedTransaction).toEqual(2);
+    expect(response.body.data.deletedTransactions).toEqual(2);
     expect(response.body.data.deletedFromGroup).toEqual(true);
     const deletedGroup = await Group.findOne({ name: "testGroup" });
     expect(deletedGroup).toEqual(null);
@@ -1136,7 +1136,7 @@ describe("deleteGroup", () => {
       )
       .send({ username: "admin", name: "Family" });
     expect(response.status).toBe(200);
-    expect(response.body).toEqual({ data: { error: expect.any(String) } });
+    expect(response.body).toEqual({ data: { message: "the group has been correctly deleted" } });
   });
   test("Should Return 400, if User is not Authorized", async () => {
     const user = {

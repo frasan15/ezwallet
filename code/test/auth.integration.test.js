@@ -92,7 +92,7 @@ describe('register', () => {
       .post("/api/register")
       .send({ username: "test4", email: "test4@test.com", password: "test"});
     expect(response.status).toBe(200);
-    expect(response.body).toEqual({ data: "user added succesfully" });
+    expect(response.body).toEqual({ data: {message:"user added succesfully" }});
   });
 });
 
@@ -145,7 +145,7 @@ describe("registerAdmin", () => {
       .post("/api/admin")
       .send({ username: "test4", email: "test4@test.com", password: "test"});
     expect(response.status).toBe(200);
-    expect(response.body).toEqual({ data: "admin added succesfully" });
+    expect(response.body).toEqual({ data: {message: "admin added succesfully" }});
   });
 })
 
@@ -259,7 +259,7 @@ describe("logout", () => {
 			.set("Cookie", `accessToken=${testerAccessTokenValid}; refreshToken=${testerAccessTokenValid}`);
 
 		expect(response.status).toBe(200);
-		expect(response.body).toEqual({ data: { error: "User logged out" } });
+		expect(response.body).toEqual({ data: { message: "User logged out" } });
 	});
 
 	test("should return an error if user is not found", async () => {

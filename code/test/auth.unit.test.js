@@ -156,7 +156,7 @@ describe("register", () => {
       await register(mockReq, mockRes);
       expect(mockRes.status).toHaveBeenCalledWith(200);
       expect(mockRes.json).toHaveBeenCalledWith({
-        data: "user added succesfully",
+        data:{ message:"user added succesfully" },
       });
   });
 });
@@ -312,7 +312,7 @@ describe("registerAdmin", () => {
     await registerAdmin(mockReq, mockRes);
     expect(mockRes.status).toHaveBeenCalledWith(200);
     expect(mockRes.json).toHaveBeenCalledWith({
-      data: "admin added succesfully",
+      data: {message:"admin added succesfully"},
     });
   });
 });
@@ -610,7 +610,7 @@ describe("logout", () => {
 		  secure: true
 		});
 		expect(res.status).toHaveBeenCalledWith(200);
-		expect(res.json).toHaveBeenCalledWith({"data": {"error": "User logged out"}});
+		expect(res.json).toHaveBeenCalledWith({"data": {"message": "User logged out"}});
 	  });
 	  test('Should return 500 error if an error occurs during logout', async () => {
 		const req = {
